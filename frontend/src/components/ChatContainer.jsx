@@ -86,7 +86,7 @@ const ChatContainer = () => {
       
       try {
         // Make a streaming request
-        const response = await fetch(`${API_URL}/react-search-streaming`, {
+        const response = await fetch(`${API_URL}/api/react-search-streaming`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -336,7 +336,7 @@ const ChatContainer = () => {
     if (options.deep_research) {
       handleReactAgentStreamingRequest(userMessage, options);
     } else {
-      axios.post(`${API_URL}/chat`, {
+      axios.post(`${API_URL}/api/chat`, {
         messages: [...messages, userMessage],
         model: options.model,
         thread_id: threadId,
