@@ -49,7 +49,9 @@ export const AuthProvider = ({ children }) => {
 
         if (token) {
           // Set cookie manually if received via URL
-          document.cookie = `jwt=${token}; path=/; max-age=${30 * 24 * 60 * 60}; ${process.env.NODE_ENV === "production" ? 'secure; samesite=none' : 'samesite=lax'}`;
+          document.cookie = `jwt=${token}; path=/; max-age=${30 * 24 * 60 * 60}; ${
+            window.location.protocol === "https:" ? 'secure; samesite=none' : 'samesite=lax'
+          }`;
           // Clear URL params to prevent reuse
           window.history.replaceState({}, document.title, window.location.pathname);
         }
