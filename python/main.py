@@ -51,7 +51,11 @@ app.add_middleware(
         "https://vanni-test.vercel.app",
         "http://localhost:5173", 
         "http://localhost:5174",
-    ],  # Specific origins instead of ["*"] when using credentials
+        # Add your production domain here after deployment
+        "https://vanni-test-frontend.vercel.app",
+        # Allow Vercel preview deployments
+        "https://*.vercel.app"
+    ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization", "Cookie", "Accept"],
@@ -544,11 +548,16 @@ async def react_agent_search_streaming(request: ReactAgentRequest):
         media_type="text/event-stream"
     )
 
-# Add health check endpoint
+# Update health check endpoint
 @app.get("/api/health")
 async def health_check():
     """Health check endpoint to verify API is running."""
-    return {"status": "ok", "timestamp": time.time()}
+    return {
+        "status": "ok", 
+        "timestamp": time.time(),
+        "deployment": "Vaani API successfully deployed on Vercel!",
+        "environment": "Vercel" if os.getenv("VERCEL") else "Development"
+    }
 
 if __name__ == "__main__":
     import uvicorn
