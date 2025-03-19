@@ -9,7 +9,7 @@ import axios from 'axios'
 import { ThemeContext } from '../App'
 
 // Constants
-const API_URL = import.meta.env.REACT_APP_API_URL || 'http://https://python-test-algohype.replit.app/api'
+const API_URL = import.meta.env.REACT_APP_API_URL || 'http://https://python-test-algohype.replit.app'
 
 const MessageInput = ({ onSendMessage, isLoading, setIsLoading }) => {
     const textareaRef = useRef(null);

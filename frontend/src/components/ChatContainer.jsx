@@ -14,7 +14,7 @@ import React, { useState, useEffect, useRef, useContext } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { ThemeContext } from '../App'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://https://python-test-algohype.replit.app/api'
+const API_URL = import.meta.env.VITE_API_URL || 'http://https://python-test-algohype.replit.app'
 const backend_url = import.meta.env.VITE_BACKEND_URL || 'https://vanni-test-backend.vercel.app'
 
 const ChatContainer = () => {
