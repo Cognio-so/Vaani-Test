@@ -59,7 +59,7 @@ app.get("/", (req, res) => {
 
 app.use("/auth", authRoutes);
 app.use("/api/ai", aiRoutes);
-app.use("/api/chat", chatRoutes);
+app.use("/api/chats", chatRoutes);
 app.use("/api/email", emailRoutes);
 
 // Error handling middleware
@@ -72,9 +72,24 @@ app.use((err, req, res, next) => {
   });
 });
 
-const PORT = process.env.PORT || 5000;
+// Start server
+const startServer = async () => {
+  try {
+    await connectDB();
+    if (process.env.NODE_ENV !== "production") {
+      const PORT = process.env.PORT || 5001;
+      app.listen(PORT, () => {
+        console.log(`✨ Server running locally on port ${PORT}`);
+      });
+    } else {
+      console.log("✨ Server deployed to Vercel");
+    }
+  } catch (error) {
+    console.error("Failed to start server:", error);
+    process.exit(1);
+  }
+};
 
-app.listen(PORT, () => {
-  console.log(`✨ Server running on port ${PORT}`);
-  connectDB();
-});
+startServer();
+
+module.exports = app; // Export for Vercel
