@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+.env
+.env.local
+.env.development
+.env.production
+
+# Logs
+*.log
+logs/
+
+# Redis
+dump.rdb
+
+# IDE specific files
+.vscode/
+.idea/
+
+# Build files
+dist/
+build/
+
+# Misc
+.DS_Store 
