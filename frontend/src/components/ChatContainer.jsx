@@ -15,7 +15,7 @@ import { useAuth } from '../context/AuthContext'
 import { ThemeContext } from '../App'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
-const backend_url = import.meta.env.VITE_BACKEND_URL || 'https://vanni-test-backend.vercel.app' || 'https://vanni-test-backend.vercel.app'
+const backend_url = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000' || 'https://vanni-test-backend.vercel.app'
 
 const ChatContainer = () => {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false)
