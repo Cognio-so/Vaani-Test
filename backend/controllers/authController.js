@@ -129,11 +129,11 @@ const googleCallback = (req, res) => {
     });
 
     // Redirect with token as query param for fallback
-    const redirectUrl = `${process.env.FRONTEND_URL || 'https://smith-frontend.vercel.app'}/dashboard?token=${req.user.token}`;
+    const redirectUrl = `${process.env.FRONTEND_URL || 'https://vanni-test.vercel.app'}/chat?token=${req.user.token}`;
     res.redirect(redirectUrl);
   } catch (error) {
     console.error('Google auth callback error:', error);
-    res.redirect(`${process.env.FRONTEND_URL || 'https://smith-frontend.vercel.app'}/login?error=auth_failed`);
+    res.redirect(`${process.env.FRONTEND_URL || 'https://vanni-test.vercel.app'}/login?error=auth_failed`);
   }
 };
 

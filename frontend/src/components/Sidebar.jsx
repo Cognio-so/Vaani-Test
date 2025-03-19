@@ -18,7 +18,7 @@ const Sidebar = ({ isVisible, onToggle, onOpenSettings, onOpenHistory, onNewChat
     // Fetch user profile data
     const fetchProfileData = async () => {
         try {
-            const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'}/auth/profile`, {
+            const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL || 'https://vanni-test-backend.vercel.app'}/auth/profile`, {
                 withCredentials: true
             });
             
@@ -41,7 +41,7 @@ const Sidebar = ({ isVisible, onToggle, onOpenSettings, onOpenHistory, onNewChat
     // Handle logout
     const handleLogout = async () => {
         try {
-            await axios.post(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'}/auth/logout`, {}, {
+            await axios.post(`${import.meta.env.VITE_BACKEND_URL || 'https://vanni-test-backend.vercel.app'}/auth/logout`, {}, {
                 withCredentials: true
             });
             
