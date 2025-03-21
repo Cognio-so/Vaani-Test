@@ -160,4 +160,32 @@ exports.updateChat = async (req, res) => {
         console.error('Update chat error:', error);
         res.status(500).json({ success: false, error: error.message });
     }
+};
+
+exports.deleteChat = async (req, res) => {
+    try {
+        const { chatId } = req.params;
+        const userId = req.user._id;
+
+        // Check if the chat exists and belongs to this user
+        const chat = await Chat.findOne({ chatId, userId });
+        
+        if (!chat) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Chat not found or not authorized to delete it' 
+            });
+        }
+        
+        // Delete the chat
+        await Chat.deleteOne({ chatId, userId });
+        
+        res.json({ 
+            success: true, 
+            message: 'Chat deleted successfully'
+        });
+    } catch (error) {
+        console.error('Delete chat error:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
 }; 

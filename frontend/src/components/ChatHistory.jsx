@@ -5,7 +5,7 @@ import axios from 'axios';
 import { IoClose } from 'react-icons/io5';
 import { ThemeContext } from '../App';
 
-const backend_url = import.meta.env.VITE_BACKEND_URL || 'https://vanni-test-backend.vercel.app';
+const backend_url = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
 
 const ChatHistory = ({ isOpen, onClose, conversations, onSelectConversation }) => {
     const [searchQuery, setSearchQuery] = useState('');
@@ -21,18 +21,19 @@ const ChatHistory = ({ isOpen, onClose, conversations, onSelectConversation }) =
         }
     }, [isOpen]);
 
+    // Enhanced fetchChatHistory with strict deduplication
     const fetchChatHistory = async () => {
         setIsLoading(true);
         setError(null);
-        
+
         try {
-            // Use the correct API URL - assuming it's passed as a prop or defined in a constants file
+            console.log("ChatHistory component fetching history...");
             const response = await axios.get(`${backend_url}/api/chat/history/all`, {
-                withCredentials: true
+                withCredentials: true,
+                timeout: 10000 // 10 second timeout
             });
-            
+
             if (response.data.success) {
-                // Format data for the component
                 const formattedData = {
                     actions: {
                         title: "Actions",
@@ -41,84 +42,97 @@ const ChatHistory = ({ isOpen, onClose, conversations, onSelectConversation }) =
                         ]
                     }
                 };
-                
-                // Add categories from API response only if they exist
+
+                // Use a Map to strictly deduplicate chats by ID
+                const allChatsById = new Map();
+
                 const { categories } = response.data;
-                
-                // Make sure categories exists before trying to access properties
+
                 if (categories) {
-                    if (categories.today && categories.today.length > 0) {
-                        formattedData.today = {
-                            title: "Today",
-                            items: categories.today.map(chat => ({
+                    // Combine all chats from all categories into one pool first
+                    const allChats = [
+                        ...(categories.today || []),
+                        ...(categories.yesterday || []),
+                        ...(categories.lastWeek || []),
+                        ...(categories.lastMonth || []),
+                        ...(categories.older || [])
+                    ].filter(chat => chat && chat.id && typeof chat.id === 'string'); // Filter invalid chats
+
+                    // Deduplicate and keep the most complete/recent version
+                    allChats.forEach(chat => {
+                        const existingChat = allChatsById.get(chat.id);
+                        const currentMsgCount = chat.messages ? chat.messages.length : 0;
+                        const existingMsgCount = existingChat?.messages ? existingChat.messages.length : 0;
+                        const currentUpdated = new Date(chat.lastUpdated || 0).getTime();
+                        const existingUpdated = new Date(existingChat?.lastUpdated || 0).getTime();
+
+                        // Keep the chat with more messages or, if equal, the most recent timestamp
+                        if (!existingChat || 
+                            currentMsgCount > existingMsgCount || 
+                            (currentMsgCount === existingMsgCount && currentUpdated > existingUpdated)) {
+                            allChatsById.set(chat.id, { ...chat, messageCount: currentMsgCount });
+                        }
+                    });
+
+                    // Function to process and categorize chats
+                    const processCategory = (categoryName, filterFn) => {
+                        const categoryChats = Array.from(allChatsById.values())
+                            .filter(chat => filterFn(new Date(chat.lastUpdated)))
+                            .sort((a, b) => new Date(b.lastUpdated) - new Date(a.lastUpdated));
+
+                        if (categoryChats.length === 0) return null;
+
+                        return {
+                            title: categoryName,
+                            items: categoryChats.map(chat => ({
                                 id: chat.id,
                                 title: chat.title || 'Untitled Chat',
                                 time: formatTime(chat.lastUpdated),
                                 preview: chat.preview,
-                                lastUpdated: chat.lastUpdated // Store the original timestamp
+                                lastUpdated: chat.lastUpdated,
+                                messageCount: chat.messageCount || 0
                             }))
                         };
-                    }
-                    
-                    if (categories.yesterday && categories.yesterday.length > 0) {
-                        formattedData.yesterday = {
-                            title: "Yesterday",
-                            items: categories.yesterday.map(chat => ({
-                                id: chat.id,
-                                title: chat.title || 'Untitled Chat',
-                                time: formatTime(chat.lastUpdated),
-                                preview: chat.preview,
-                                lastUpdated: chat.lastUpdated // Store the original timestamp
-                            }))
-                        };
-                    }
-                    
-                    if (categories.lastWeek && categories.lastWeek.length > 0) {
-                        formattedData.lastWeek = {
-                            title: "Last 7 Days",
-                            items: categories.lastWeek.map(chat => ({
-                                id: chat.id,
-                                title: chat.title || 'Untitled Chat',
-                                time: formatTime(chat.lastUpdated),
-                                preview: chat.preview,
-                                lastUpdated: chat.lastUpdated // Store the original timestamp
-                            }))
-                        };
-                    }
-                    
-                    if (categories.lastMonth && categories.lastMonth.length > 0) {
-                        formattedData.lastMonth = {
-                            title: "Last 30 Days",
-                            items: categories.lastMonth.map(chat => ({
-                                id: chat.id,
-                                title: chat.title || 'Untitled Chat',
-                                time: formatTime(chat.lastUpdated),
-                                preview: chat.preview,
-                                lastUpdated: chat.lastUpdated // Store the original timestamp
-                            }))
-                        };
-                    }
-                    
-                    if (categories.older && categories.older.length > 0) {
-                        formattedData.older = {
-                            title: "Older",
-                            items: categories.older.map(chat => ({
-                                id: chat.id,
-                                title: chat.title || 'Untitled Chat',
-                                time: formatTime(chat.lastUpdated),
-                                preview: chat.preview,
-                                lastUpdated: chat.lastUpdated // Store the original timestamp
-                            }))
-                        };
-                    }
+                    };
+
+                    // Define time filters
+                    const now = new Date();
+                    const todayStart = new Date(now.setHours(0, 0, 0, 0));
+                    const yesterdayStart = new Date(todayStart);
+                    yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+                    const lastWeekStart = new Date(todayStart);
+                    lastWeekStart.setDate(lastWeekStart.getDate() - 7);
+                    const lastMonthStart = new Date(todayStart);
+                    lastMonthStart.setDate(lastMonthStart.getDate() - 30);
+
+                    // Process each category with strict time boundaries
+                    const today = processCategory("Today", date => date >= todayStart);
+                    if (today) formattedData.today = today;
+
+                    const yesterday = processCategory("Yesterday", date => date >= yesterdayStart && date < todayStart);
+                    if (yesterday) formattedData.yesterday = yesterday;
+
+                    const lastWeek = processCategory("Last 7 Days", date => date >= lastWeekStart && date < yesterdayStart);
+                    if (lastWeek) formattedData.lastWeek = lastWeek;
+
+                    const lastMonth = processCategory("Last 30 Days", date => date >= lastMonthStart && date < lastWeekStart);
+                    if (lastMonth) formattedData.lastMonth = lastMonth;
+
+                    const older = processCategory("Older", date => date < lastMonthStart);
+                    if (older) formattedData.older = older;
                 }
-                
+
                 setHistoryData(formattedData);
+                console.log("Chat history processed with categories:", Object.keys(formattedData).length - 1);
             } else {
                 setError('Failed to fetch chat history');
+                console.error("Error in history response:", response.data);
             }
         } catch (err) {
             console.error('Error fetching chat history:', err);
+            if (err.response) {
+                console.error("Error response data:", err.response.data);
+            }
             setError('Error fetching chat history. Please try again.');
         } finally {
             setIsLoading(false);
@@ -129,7 +143,7 @@ const ChatHistory = ({ isOpen, onClose, conversations, onSelectConversation }) =
         const date = new Date(dateString);
         const now = new Date();
         const diffHours = Math.floor((now - date) / (1000 * 60 * 60));
-        
+
         if (diffHours < 24) {
             return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
         } else {
@@ -139,42 +153,46 @@ const ChatHistory = ({ isOpen, onClose, conversations, onSelectConversation }) =
         }
     };
 
-    const handleChatSelection = (chatId, lastUpdated) => {
+    // Improved chat selection handler
+    const handleChatSelection = (chatId) => {
         if (chatId === 'new_chat') {
-            // Handle creating a new chat
+            console.log("Creating new chat");
             onSelectConversation('new_' + Date.now());
         } else {
-            console.log("Selected chat ID:", chatId);
-            // Handle selecting an existing chat, ensuring we're using the permanent ID
-            if (chatId && !chatId.startsWith('temp_')) {
-                onSelectConversation(chatId, lastUpdated);
+            console.log("Selected chat ID for loading:", chatId);
+
+            if (chatId && typeof chatId === 'string') {
+                if (chatId.startsWith('temp_')) {
+                    console.warn("Attempted to load chat with temporary ID:", chatId);
+                }
+                onSelectConversation(chatId);
             } else {
-                console.warn("Attempted to load chat with temporary ID:", chatId);
-                // Handle the error case or use a fallback
-                onSelectConversation(chatId, lastUpdated);
+                console.error("Invalid chat ID:", chatId);
+                onSelectConversation('new_' + Date.now());
             }
         }
-        onClose();
+
+        setTimeout(() => onClose(), 100);
     };
 
     // Filter chats based on search query
     const filterChatsBySearch = () => {
         if (!searchQuery.trim()) return historyData;
-        
+
         const filteredData = {};
         const query = searchQuery.toLowerCase();
-        
+
         Object.entries(historyData).forEach(([key, section]) => {
             if (key === 'actions') {
-                filteredData[key] = section; // Always keep actions
+                filteredData[key] = section;
                 return;
             }
-            
-            const filteredItems = section.items.filter(item => 
-                item.title.toLowerCase().includes(query) || 
+
+            const filteredItems = section.items.filter(item =>
+                item.title.toLowerCase().includes(query) ||
                 (item.preview && item.preview.toLowerCase().includes(query))
             );
-            
+
             if (filteredItems.length > 0) {
                 filteredData[key] = {
                     title: section.title,
@@ -182,70 +200,38 @@ const ChatHistory = ({ isOpen, onClose, conversations, onSelectConversation }) =
                 };
             }
         });
-        
+
         return filteredData;
     };
 
     const displayData = filterChatsBySearch();
 
-    // Group conversations by date categories
-    const groupedConversations = {
-        today: conversations.filter(chat => {
-            const chatDate = new Date(chat.lastUpdated);
-            const now = new Date();
-            const today = new Date(now.setHours(0, 0, 0, 0));
-            return chatDate >= today;
-        }),
-        yesterday: conversations.filter(chat => {
-            const chatDate = new Date(chat.lastUpdated);
-            const now = new Date();
-            const today = new Date(now.setHours(0, 0, 0, 0));
-            const yesterday = new Date(today);
-            yesterday.setDate(yesterday.getDate() - 1);
-            return chatDate >= yesterday && chatDate < today;
-        }),
-        lastWeek: conversations.filter(chat => {
-            const chatDate = new Date(chat.lastUpdated);
-            const now = new Date();
-            const today = new Date(now.setHours(0, 0, 0, 0));
-            const yesterday = new Date(today);
-            yesterday.setDate(yesterday.getDate() - 1);
-            const lastWeek = new Date(today);
-            lastWeek.setDate(lastWeek.getDate() - 7);
-            return chatDate >= lastWeek && chatDate < yesterday;
-        }),
-        older: conversations.filter(chat => {
-            const chatDate = new Date(chat.lastUpdated);
-            const now = new Date();
-            const today = new Date(now.setHours(0, 0, 0, 0));
-            const lastWeek = new Date(today);
-            lastWeek.setDate(lastWeek.getDate() - 7);
-            return chatDate < lastWeek;
-        })
+    // Add delete chat functionality
+    const deleteChat = async (chatId, event) => {
+        if (!chatId || chatId === 'new_chat' || chatId.startsWith('temp_')) return;
+        
+        // Prevent event propagation to parent elements
+        event.stopPropagation();
+        
+        try {
+            const response = await axios.delete(`${backend_url}/api/chat/${chatId}`, {
+                withCredentials: true
+            });
+            
+            if (response.data.success) {
+                console.log("Chat deleted successfully");
+                fetchChatHistory(); // Refresh the list
+            }
+        } catch (error) {
+            console.error("Error deleting chat:", error);
+        }
     };
 
-    // Helper to format preview text (truncate and strip markdown)
-    const formatPreview = (text) => {
-        if (!text) return 'No preview available';
-        // Strip markdown and truncate
-        const stripped = text
-            .replace(/!\[.*?\]\(.*?\)/g, '[Image]') // Replace image markdown
-            .replace(/\[.*?\]\(.*?\)/g, (match) => match.match(/\[(.*?)\]/)[1]) // Replace links with just the text
-            .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold
-            .replace(/\*(.*?)\*/g, '$1') // Remove italic
-            .replace(/`(.*?)`/g, '$1') // Remove inline code
-            .replace(/```[\s\S]*?```/g, '[Code Block]') // Replace code blocks
-            .replace(/#{1,6}\s(.*?)$/gm, '$1') // Remove headings
-            .trim();
-
-        return stripped.length > 60 ? stripped.substring(0, 60) + '...' : stripped;
-    };
-
+    // Removed redundant groupedConversations since we're using historyData
     return (
         <AnimatePresence>
             {isOpen && (
                 <>
-                    {/* Overlay Background */}
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 0.5 }}
@@ -254,7 +240,6 @@ const ChatHistory = ({ isOpen, onClose, conversations, onSelectConversation }) =
                         onClick={onClose}
                     />
 
-                    {/* Chat History Container */}
                     <motion.div
                         initial={{ scale: 0.8, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
@@ -265,7 +250,6 @@ const ChatHistory = ({ isOpen, onClose, conversations, onSelectConversation }) =
                         <div className={`${
                             theme === 'dark' ? 'bg-[#1a1a1a]' : 'bg-white'
                         } w-[95%] max-w-4xl rounded-lg shadow-lg overflow-hidden`}>
-                            {/* Header */}
                             <div className={`p-3 sm:p-4 border-b ${
                                 theme === 'dark' ? 'border-gray-800' : 'border-gray-200'
                             } flex justify-between items-center`}>
@@ -280,7 +264,6 @@ const ChatHistory = ({ isOpen, onClose, conversations, onSelectConversation }) =
                                 </button>
                             </div>
 
-                            {/* Search Bar */}
                             <div className="p-3 sm:p-4">
                                 <div className="relative">
                                     <RiSearchLine className="absolute left-3 top-1/2 -translate-y-1/2 text-[#cc2b5e] text-lg sm:text-xl" />
@@ -290,15 +273,14 @@ const ChatHistory = ({ isOpen, onClose, conversations, onSelectConversation }) =
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
                                         className={`w-full ${
-                                            theme === 'dark' 
-                                              ? 'bg-white/[0.2] text-white' 
-                                              : 'bg-gray-100 text-gray-800'
+                                            theme === 'dark'
+                                                ? 'bg-white/[0.2] text-white'
+                                                : 'bg-gray-100 text-gray-800'
                                         } text-sm sm:text-base pl-10 pr-4 py-2 rounded-lg outline-none`}
                                     />
                                 </div>
                             </div>
 
-                            {/* Chat List */}
                             <div className="overflow-y-auto scrollbar-hide max-h-[60vh]">
                                 {isLoading ? (
                                     <div className={`text-center py-8 ${
@@ -325,30 +307,46 @@ const ChatHistory = ({ isOpen, onClose, conversations, onSelectConversation }) =
                                             {section.items.map((item) => (
                                                 <motion.div
                                                     key={item.id}
-                                                    whileHover={{ 
-                                                        backgroundColor: theme === 'dark' 
-                                                            ? 'rgba(255, 255, 255, 0.1)' 
-                                                            : 'rgba(0, 0, 0, 0.05)' 
+                                                    whileHover={{
+                                                        backgroundColor: theme === 'dark'
+                                                            ? 'rgba(255, 255, 255, 0.1)'
+                                                            : 'rgba(0, 0, 0, 0.05)'
                                                     }}
-                                                    className="px-4 py-2 cursor-pointer"
-                                                    onClick={() => handleChatSelection(item.id, item.lastUpdated)}
+                                                    className="px-4 py-2 cursor-pointer relative group"
+                                                    onClick={() => handleChatSelection(item.id)}
                                                 >
-                                                    <div className="flex items-center">
-                                                        {item.isAction ? (
-                                                            <RiAddLine className="mr-2 text-[#cc2b5e]" />
-                                                        ) : null}
-                                                        <div className={`${
-                                                            theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
-                                                        } text-sm`}>
-                                                            {item.title || "Untitled Chat"}
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center flex-1">
+                                                            {item.isAction ? (
+                                                                <RiAddLine className="mr-2 text-[#cc2b5e]" />
+                                                            ) : null}
+                                                            <div className={`${
+                                                                theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                                                            } text-sm truncate`}>
+                                                                {item.title || "Untitled Chat"}
+                                                            </div>
                                                         </div>
+                                                        
+                                                        {!item.isAction && (
+                                                            <button 
+                                                                className={`opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-full ${
+                                                                    theme === 'dark' ? 'hover:bg-gray-800' : 'hover:bg-gray-200'
+                                                                }`}
+                                                                onClick={(e) => deleteChat(item.id, e)}
+                                                            >
+                                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-red-500" viewBox="0 0 20 20" fill="currentColor">
+                                                                    <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                                                                </svg>
+                                                            </button>
+                                                        )}
                                                     </div>
+                                                    
                                                     {!item.isAction && (
                                                         <>
                                                             <div className={`${
                                                                 theme === 'dark' ? 'text-gray-500' : 'text-gray-500'
                                                             } text-xs mt-1`}>
-                                                                {item.time || "Unknown time"}
+                                                                {item.time || " GuilUnknown time"}
                                                             </div>
                                                             {item.preview !== undefined && (
                                                                 <div className={`${
@@ -373,4 +371,20 @@ const ChatHistory = ({ isOpen, onClose, conversations, onSelectConversation }) =
     );
 };
 
-export default ChatHistory; 
+// Helper to format preview text (unchanged)
+const formatPreview = (text) => {
+    if (!text) return 'No preview available';
+    const stripped = text
+        .replace(/!\[.*?\]\(.*?\)/g, '[Image]')
+        .replace(/\[.*?\]\(.*?\)/g, (match) => match.match(/\[(.*?)\]/)[1])
+        .replace(/\*\*(.*?)\*\*/g, '$1')
+        .replace(/\*(.*?)\*/g, '$1')
+        .replace(/`(.*?)`/g, '$1')
+        .replace(/```[\s\S]*?```/g, '[Code Block]')
+        .replace(/#{1,6}\s(.*?)$/gm, '$1')
+        .trim();
+
+    return stripped.length > 60 ? stripped.substring(0, 60) + '...' : stripped;
+};
+
+export default ChatHistory;

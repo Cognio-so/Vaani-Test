@@ -9,7 +9,7 @@ import axios from 'axios'
 import { ThemeContext } from '../App'
 
 // Constants
-const API_URL = import.meta.env.REACT_APP_API_URL || 'https://python-test-algohype.replit.app'
+const API_URL = import.meta.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
 const MessageInput = ({ onSendMessage, isLoading, setIsLoading }) => {
     const textareaRef = useRef(null);
@@ -63,7 +63,7 @@ const MessageInput = ({ onSendMessage, isLoading, setIsLoading }) => {
             
             setIsLoading(true);
             try {
-                const response = await axios.post(`${API_URL}/api/upload`, formData, {
+                const response = await axios.post(`${API_URL}/upload`, formData, {
                     headers: {
                         'Content-Type': 'multipart/form-data'
                     }
@@ -184,12 +184,12 @@ const MessageInput = ({ onSendMessage, isLoading, setIsLoading }) => {
                             theme === 'dark' 
                               ? 'text-[#cc2b5e] hover:text-[#bd194d]' 
                               : 'text-[#cc2b5e] hover:text-[#bd194d]'
-                        } transition-all text-base sm:text-lg md:text-xl p-0.5 sm:p-1 hover:bg-white/10 rounded-full relative ${deepResearch ? 'bg-white/20' : ''}`}
+                        } transition-all text-base sm:text-lg md:text-xl p-0.5 sm:p-1 hover:bg-white/10 rounded-full relative flex items-center ${deepResearch ? 'bg-white/20' : ''}`}
                         title={deepResearch ? "Web research mode enabled - I'll search for up-to-date information" : "Web research mode disabled"}
                         onClick={toggleDeepResearch}
                     >
                         <CiGlobe />
-                        
+                        {deepResearch && <span className="ml-1 text-xs whitespace-nowrap text-[#cc2b5e] font-medium">Web Research</span>}
                     </button>
                     <button 
                         type="button"
@@ -197,11 +197,12 @@ const MessageInput = ({ onSendMessage, isLoading, setIsLoading }) => {
                             theme === 'dark' 
                               ? 'text-[#cc2b5e] hover:text-[#bd194d]' 
                               : 'text-[#cc2b5e] hover:text-[#bd194d]'
-                        } transition-all text-base sm:text-lg md:text-xl p-0.5 sm:p-1 hover:bg-white/10 rounded-full ${useAgent ? 'bg-white/10' : ''}`}
+                        } transition-all text-base sm:text-lg md:text-xl p-0.5 sm:p-1 hover:bg-white/10 rounded-full flex items-center ${useAgent ? 'bg-white/10' : ''}`}
                         title={useAgent ? "AI agent enabled" : "AI agent disabled"}
                         onClick={toggleAgentChat}
                     >
                         <FaLightbulb />
+                        {useAgent && <span className="ml-1 text-xs whitespace-nowrap text-[#cc2b5e] font-medium">AI Agent</span>}
                     </button>
                 </div>
 
