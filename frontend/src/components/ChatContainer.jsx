@@ -185,7 +185,6 @@ const ChatContainer = () => {
         ];
         
         setConversations(allChats);
-        console.log("Chat history loaded:", allChats.length, "conversations");
       }
     } catch (error) {
       console.error("Error fetching chat history:", error);
@@ -202,13 +201,11 @@ const ChatContainer = () => {
     if (!user || currentMessages.length === 0 || !currentMessages.some(m => m.role === 'user') || isLoadingChat) return;
     
     if (saveInProgress.current) {
-      console.log("Save already in progress, skipping...");
       return;
     }
     
     // Don't save if the last message is temporary
     if (currentMessages[currentMessages.length - 1]?.isTemporary) {
-      console.log("Skipping save for temporary message");
       return;
     }
     
@@ -228,7 +225,6 @@ const ChatContainer = () => {
       // Filter out temporary messages before saving
       const messagesToSave = currentMessages.filter(msg => !msg.isTemporary);
       
-      console.log("Saving chat with ID:", chatId, "Messages:", messagesToSave.length);
       
       // Choose the right endpoint - update for existing chats, save for new ones
       let response;
@@ -254,12 +250,10 @@ const ChatContainer = () => {
       
       if (response.data.success) {
         if (response.data.chat.id && (!threadId || threadId.startsWith('temp_'))) {
-          console.log("Updating thread ID from", threadId, "to", response.data.chat.id);
           setThreadId(response.data.chat.id);
           chatIdRef.current = response.data.chat.id;
         }
         fetchChatHistory();
-        console.log("Chat saved successfully with", messagesToSave.length, "messages");
         
         // If we were using a temporary title, update with the one from server
         if (title === "New Chat" || title.endsWith("...")) {
@@ -290,7 +284,6 @@ const ChatContainer = () => {
   useEffect(() => {
     if (isGeneratingMedia) {
       const timeoutId = setTimeout(() => {
-        console.log("Safety timeout: clearing media generation state");
         setIsGeneratingMedia(false);
         setGeneratingMediaType(null);
       }, 30000);
@@ -319,7 +312,6 @@ const ChatContainer = () => {
           content.includes('audio-url');
         
         if (containsImageUrl || containsMusicUrl) {
-          console.log("Media detected in last message, clearing generation state");
           setIsGeneratingMedia(false);
           setGeneratingMediaType(null);
         }
@@ -401,14 +393,12 @@ const ChatContainer = () => {
           if (done) break;
           
           const chunk = decoder.decode(value);
-          console.log("Received chunk:", chunk);
           
           const lines = chunk.split('\n').filter(line => line.trim());
           
           for (const line of lines) {
             try {
               const data = JSON.parse(line);
-              console.log("Parsed stream data:", data);
               
               if (data.type === 'status') {
                 if (!isGeneratingMedia) {
@@ -513,7 +503,6 @@ const ChatContainer = () => {
     
     if (options.file_url) {
       const fileUrl = options.file_url;
-      console.log("File URL to include:", fileUrl);
       
       const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(fileUrl);
       
@@ -557,12 +546,10 @@ const ChatContainer = () => {
 
     // Set the appropriate media state based on detection
     if (isAudioRequest) {
-      console.log("Audio generation detected!");
       setIsGeneratingMedia(true);
       setGeneratingMediaType('audio');
       setMediaType('music'); // Make sure to set this too
     } else if (isImageRequest) {
-      console.log("Image generation detected!");
       setIsGeneratingMedia(true);
       setGeneratingMediaType('image');
       setMediaType('image'); // Make sure to set this too
@@ -1034,7 +1021,6 @@ const ChatContainer = () => {
   };
 
   const handleMediaRequested = (mediaType) => {
-    console.log(`Media requested from input: ${mediaType}`);
     setIsGeneratingMedia(true);
     setGeneratingMediaType(mediaType);
   };
@@ -1043,7 +1029,6 @@ const ChatContainer = () => {
     if (!user || !threadId || threadId.startsWith('temp_') || isLoadingChat) return;
     
     try {
-      console.log("Updating chat title to:", newTitle);
       const response = await axios.put(`${backend_url}/api/chat/${threadId}/update`, {
         title: newTitle,
         messages: messages
@@ -1054,7 +1039,6 @@ const ChatContainer = () => {
       if (response.data.success) {
         setChatTitle(newTitle);
         fetchChatHistory(); // Refresh the list
-        console.log("Chat title updated successfully");
       }
     } catch (error) {
       console.error("Error updating chat title:", error);

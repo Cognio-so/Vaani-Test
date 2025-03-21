@@ -27,7 +27,6 @@ const ChatHistory = ({ isOpen, onClose, conversations, onSelectConversation }) =
         setError(null);
 
         try {
-            console.log("ChatHistory component fetching history...");
             const response = await axios.get(`${backend_url}/api/chat/history/all`, {
                 withCredentials: true,
                 timeout: 10000 // 10 second timeout
@@ -123,7 +122,6 @@ const ChatHistory = ({ isOpen, onClose, conversations, onSelectConversation }) =
                 }
 
                 setHistoryData(formattedData);
-                console.log("Chat history processed with categories:", Object.keys(formattedData).length - 1);
             } else {
                 setError('Failed to fetch chat history');
                 console.error("Error in history response:", response.data);
@@ -156,10 +154,8 @@ const ChatHistory = ({ isOpen, onClose, conversations, onSelectConversation }) =
     // Improved chat selection handler
     const handleChatSelection = (chatId) => {
         if (chatId === 'new_chat') {
-            console.log("Creating new chat");
             onSelectConversation('new_' + Date.now());
         } else {
-            console.log("Selected chat ID for loading:", chatId);
 
             if (chatId && typeof chatId === 'string') {
                 if (chatId.startsWith('temp_')) {
@@ -219,7 +215,6 @@ const ChatHistory = ({ isOpen, onClose, conversations, onSelectConversation }) =
             });
             
             if (response.data.success) {
-                console.log("Chat deleted successfully");
                 fetchChatHistory(); // Refresh the list
             }
         } catch (error) {

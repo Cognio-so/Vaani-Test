@@ -49,7 +49,6 @@ const MessageInput = ({ onSendMessage, isLoading, setIsLoading }) => {
     const handleModelSelect = (modelId) => {
         setSelectedModel(modelId);
         setIsModelSelectorOpen(false);
-        console.log(`Model switched to: ${modelId}`);
     };
 
     const handleFileChange = async (event) => {
@@ -71,7 +70,6 @@ const MessageInput = ({ onSendMessage, isLoading, setIsLoading }) => {
                 
                 // Get the file URL from the response (not file_path)
                 setUploadedFilePath(response.data.file_path);
-                console.log("File uploaded successfully:", response.data.file_path);
             } catch (error) {
                 console.error("Error uploading file:", error);
                 alert("Failed to upload file. Please try again.");
@@ -121,7 +119,6 @@ const MessageInput = ({ onSendMessage, isLoading, setIsLoading }) => {
             setUseAgent(false);
         }
         setDeepResearch(!deepResearch);
-        console.log(`Deep research ${!deepResearch ? 'enabled' : 'disabled'}`);
     };
 
     const toggleDeepResearch = () => {
@@ -134,7 +131,6 @@ const MessageInput = ({ onSendMessage, isLoading, setIsLoading }) => {
             setDeepResearch(false);
         }
         setUseAgent(!useAgent);
-        console.log(`Agent chat ${!useAgent ? 'enabled' : 'disabled'}`);
     };
 
     const currentModel = models.find(model => model.id === selectedModel);
