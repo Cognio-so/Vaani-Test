@@ -5,7 +5,7 @@ import axios from 'axios';
 import { IoClose } from 'react-icons/io5';
 import { ThemeContext } from '../App';
 
-const backend_url = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+const backend_url = import.meta.env.VITE_BACKEND_URL || 'https://vanni-test-backend.vercel.app';
 
 const ChatHistory = ({ isOpen, onClose, conversations, onSelectConversation }) => {
     const [searchQuery, setSearchQuery] = useState('');

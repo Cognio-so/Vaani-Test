@@ -9,7 +9,7 @@ import axios from 'axios'
 import { ThemeContext } from '../App'
 
 // Constants
-const API_URL = import.meta.env.REACT_APP_API_URL || 'http://localhost:8000/api'
+const API_URL= import.meta.env.REACT_APP_API_URL || 'https://python-test-algohype.replit.app'
 
 const MessageInput = ({ onSendMessage, isLoading, setIsLoading }) => {
     const textareaRef = useRef(null);
@@ -63,7 +63,7 @@ const MessageInput = ({ onSendMessage, isLoading, setIsLoading }) => {
             
             setIsLoading(true);
             try {
-                const response = await axios.post(`${API_URL}/upload`, formData, {
+                const response = await axios.post(`${API_URL}/api/upload`, formData, {
                     headers: {
                         'Content-Type': 'multipart/form-data'
                     }
