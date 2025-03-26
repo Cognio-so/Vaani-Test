@@ -29,7 +29,6 @@ const ChatHistory = ({ isOpen, onClose, conversations, onSelectConversation }) =
         try {
             const response = await axios.get(`${backend_url}/api/chat/history/all`, {
                 withCredentials: true,
-                timeout: 10000 // 10 second timeout
             });
 
             if (response.data.success) {

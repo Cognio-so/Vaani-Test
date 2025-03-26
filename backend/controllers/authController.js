@@ -81,11 +81,12 @@ const Logout = async (req, res) => {
   }
 };
 
-const checkAuth = async (req, res) => {
+const checkAuth = (req, res) => {
   try {
+    // Just return the user object that was populated by the protectRoutes middleware
     res.status(200).json(req.user);
   } catch (error) {
-    console.log("Error in check auth controller", error.message);
+    console.log("Error in checkAuth controller", error.message);
     res.status(500).json({ message: "Internal Server Error" });
   }
 };

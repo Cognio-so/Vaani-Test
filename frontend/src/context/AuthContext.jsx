@@ -35,32 +35,35 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const verifyUser = async () => {
       try {
-        // Check for token in URL (Google redirect fallback)
+        // 1. Set initial state from sessionStorage for immediate UI response
+        const savedUser = sessionStorage.getItem('user');
+        if (savedUser) {
+          try {
+            setUser(JSON.parse(savedUser));
+          } catch (e) {
+            sessionStorage.removeItem('user');
+          }
+        }
+
+        // 2. Handle OAuth token from URL (for Google/third-party auth)
         const urlParams = new URLSearchParams(window.location.search);
         const token = urlParams.get('token');
         const error = urlParams.get('error');
 
         if (error === 'auth_failed') {
-          console.error('Google authentication failed');
           setUser(null);
           setLoading(false);
           return;
         }
 
         if (token) {
-          // Set cookie manually if received via URL
           document.cookie = `jwt=${token}; path=/; max-age=${30 * 24 * 60 * 60}; ${process.env.NODE_ENV === "production" ? 'secure; samesite=none' : 'samesite=lax'}`;
-          // Store user in sessionStorage as a fallback
           sessionStorage.setItem('auth_token', token);
-          // Clear URL params to prevent reuse
           window.history.replaceState({}, document.title, window.location.pathname);
         }
 
-        const response = await fetchWithCredentials('/auth/check-auth');
-        const data = await response.json();
-        setUser(data);
-        // Store user in sessionStorage
-        sessionStorage.setItem('user', JSON.stringify(data));
+        // 3. Always verify with server when app loads
+        await checkAuthStatus(); 
       } catch (error) {
         console.error("Auth verification failed:", error);
         setUser(null);
@@ -75,12 +78,24 @@ export const AuthProvider = ({ children }) => {
 
   const checkAuthStatus = async () => {
     try {
+      // First clear loading state
+      setLoading(true);
+      
+      // Make the request
       const response = await fetchWithCredentials('/auth/check-auth');
+      
+      // Set user data from response
       const data = await response.json();
       setUser(data);
+      
+      // Store in sessionStorage
+      sessionStorage.setItem('user', JSON.stringify(data));
+      return true;
     } catch (error) {
       console.error("Auth check failed:", error);
       setUser(null);
+      sessionStorage.removeItem('user');
+      return false;
     } finally {
       setLoading(false);
     }
