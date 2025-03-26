@@ -11,22 +11,34 @@ passport.deserializeUser((userObj, done) => {
   done(null, userObj);
 });
 
+const validateEnv = () => {
+  const required = ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'BACKEND_URL', 'JWT_SECRET'];
+  required.forEach(env => {
+    if (!process.env[env]) {
+      console.error(`Missing environment variable: ${env}`);
+      throw new Error(`Missing required environment variable: ${env}`);
+    }
+  });
+};
+
 passport.use(
   new GoogleStrategy(
     {
-      clientID: process.env.GOOGLE_CLIENT_ID || throwError('GOOGLE_CLIENT_ID missing'),
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || throwError('GOOGLE_CLIENT_SECRET missing'),
+      clientID: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
       callbackURL: `${process.env.BACKEND_URL}/auth/google/callback`,
       scope: ['profile', 'email'],
       passReqToCallback: true
     },
     async (req, accessToken, refreshToken, profile, done) => {
       try {
-        if (!process.env.JWT_SECRET) throw new Error('JWT_SECRET missing');
+        validateEnv();
         let user = await User.findOne({ googleId: profile.id });
 
         if (user) {
-          const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '30d' });
+          const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+            expiresIn: '30d'
+          });
           return done(null, { user, token });
         }
 
@@ -38,7 +50,9 @@ passport.use(
             user.profilePicture = profile.photos[0].value;
           }
           await user.save();
-          const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '30d' });
+          const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+            expiresIn: '30d'
+          });
           return done(null, { user, token });
         }
 
@@ -51,18 +65,16 @@ passport.use(
         });
 
         await newUser.save();
-        const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET, { expiresIn: '30d' });
+        const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET, {
+          expiresIn: '30d'
+        });
         done(null, { user: newUser, token });
       } catch (error) {
-        console.error('Google Strategy error:', error.stack);
+        console.error('Error in Google Strategy:', error.stack);
         done(error);
       }
     }
   )
 );
-
-function throwError(message) {
-  throw new Error(message);
-}
 
 module.exports = passport;

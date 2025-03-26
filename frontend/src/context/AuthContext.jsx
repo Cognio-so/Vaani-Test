@@ -10,7 +10,7 @@ export const AuthProvider = ({ children }) => {
     const savedUser = sessionStorage.getItem('user');
     return savedUser ? JSON.parse(savedUser) : null;
   });
-  const [loading, setLoading] = useState(true); // Always start as loading until verified
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   const fetchWithCredentials = async (endpoint, options = {}) => {
@@ -24,11 +24,13 @@ export const AuthProvider = ({ children }) => {
     };
 
     try {
+      console.log(`Fetching ${endpoint} with credentials`);
       const response = await fetch(`${API_URL}${endpoint}`, defaultOptions);
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
         console.error(`Fetch error at ${endpoint}: ${response.status}`, errorData);
         if (response.status === 401) {
+          console.log("401 Unauthorized detected, clearing user state");
           setUser(null);
           sessionStorage.removeItem('user');
         }
@@ -54,19 +56,15 @@ export const AuthProvider = ({ children }) => {
           console.log('Handling Google auth redirect');
           const urlUser = urlParams.get('user');
           if (urlUser) {
-            try {
-              const userData = JSON.parse(decodeURIComponent(urlUser));
-              if (isMounted) {
-                console.log('Setting user from Google auth:', userData);
-                setUser(userData);
-                sessionStorage.setItem('user', JSON.stringify(userData));
-                setLoading(false);
-                window.history.replaceState({}, document.title, '/chat');
-                navigate('/chat');
-                return;
-              }
-            } catch (e) {
-              console.error("Error parsing Google auth user data:", e.stack);
+            const userData = JSON.parse(decodeURIComponent(urlUser));
+            if (isMounted) {
+              console.log('Setting user from Google auth:', userData);
+              setUser(userData);
+              sessionStorage.setItem('user', JSON.stringify(userData));
+              setLoading(false);
+              window.history.replaceState({}, document.title, '/chat');
+              navigate('/chat');
+              return;
             }
           } else {
             console.error("No user data in Google auth redirect");
@@ -103,8 +101,6 @@ export const AuthProvider = ({ children }) => {
       } catch (error) {
         console.error("Auth verification failed:", error.stack);
         if (isMounted) {
-          setUser(null);
-          sessionStorage.removeItem('user');
           setLoading(false);
           const currentPath = window.location.pathname;
           const nonAuthPaths = ['/login', '/signup', '/'];
@@ -148,6 +144,7 @@ export const AuthProvider = ({ children }) => {
         body: JSON.stringify({ email, password }),
       });
       const data = await response.json();
+      console.log('Login successful:', data);
       setUser(data);
       sessionStorage.setItem('user', JSON.stringify(data));
       navigate("/chat");
@@ -166,6 +163,7 @@ export const AuthProvider = ({ children }) => {
         body: JSON.stringify({ name, email, password }),
       });
       const data = await response.json();
+      console.log('Signup successful:', data);
       setUser(data);
       sessionStorage.setItem('user', JSON.stringify(data));
       navigate("/chat");

@@ -8,7 +8,7 @@ const protectRoutes = async (req, res, next) => {
       throw new Error("JWT_SECRET is not defined");
     }
 
-    console.log("protectRoutes: Cookies:", req.cookies);
+    console.log("protectRoutes: Incoming cookies:", req.cookies);
     const token = req.cookies.jwt;
 
     if (!token) {
@@ -27,7 +27,7 @@ const protectRoutes = async (req, res, next) => {
     }
 
     req.user = user;
-    console.log("protectRoutes: User set:", user);
+    console.log("protectRoutes: User set:", user.email);
     next();
   } catch (error) {
     console.error("Error in protectRoutes middleware:", error.stack);

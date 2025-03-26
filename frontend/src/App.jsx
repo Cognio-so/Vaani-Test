@@ -38,7 +38,16 @@ const ProtectedRoute = ({ children }) => {
       setHasUser(true);
       setLocalLoading(false);
     } else if (savedUser) {
-      setHasUser(true);
+      // Here's a potential issue - we need to parse the savedUser
+      try {
+        const parsedUser = JSON.parse(savedUser);
+        if (parsedUser && Object.keys(parsedUser).length > 0) {
+          setHasUser(true);
+        }
+      } catch (e) {
+        console.error("Error parsing saved user:", e);
+        sessionStorage.removeItem('user');
+      }
       setLocalLoading(false);
     } else {
       setHasUser(false);
