@@ -6,11 +6,12 @@ const AuthContext = createContext();
 const API_URL = import.meta.env.VITE_BACKEND_URL || 'https://vanni-test-backend.vercel.app';
 
 export const AuthProvider = ({ children }) => {
+  // Initialize user from sessionStorage if available
   const [user, setUser] = useState(() => {
     const savedUser = sessionStorage.getItem('user');
     return savedUser ? JSON.parse(savedUser) : null;
   });
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!sessionStorage.getItem('user'));
   const navigate = useNavigate();
 
   const fetchWithCredentials = async (endpoint, options = {}) => {
@@ -20,116 +21,112 @@ export const AuthProvider = ({ children }) => {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
       },
-      ...options,
+      ...options
     };
 
-    if (options.headers) {
-      defaultOptions.headers = {
-        ...defaultOptions.headers,
-        ...options.headers,
-      };
-    }
-
     try {
-      console.log(`Fetching ${API_URL}${endpoint} with credentials and options:`, defaultOptions);
       const response = await fetch(`${API_URL}${endpoint}`, defaultOptions);
       
-      console.log(`Response from ${endpoint}: Status ${response.status}`);
       
       if (!response.ok) {
-        let errorMessage = 'Unknown error';
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.message || 'Unknown error';
-          console.error(`Fetch error at ${endpoint}: ${response.status}`, errorData);
-        } catch (jsonError) {
-          console.error(`Could not parse error response: ${jsonError}`);
-        }
-        
+        const data = await response.text();
+        console.error('Response error:', response.status, data);
         if (response.status === 401) {
-          console.log("401 Unauthorized detected, clearing user state");
           setUser(null);
-          sessionStorage.removeItem('user');
         }
-        throw new Error(`HTTP error! status: ${response.status} - ${errorMessage}`);
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
       return response;
     } catch (error) {
-      console.error(`FetchWithCredentials error for ${endpoint}:`, error.stack);
+      console.error('Fetch error:', error);
       throw error;
     }
   };
 
   useEffect(() => {
     let isMounted = true;
-
+    let ignoreRedirects = false;
+    
     const verifyUser = async () => {
       try {
-        console.log('Verifying user authentication');
+        // Check if we're returning from Google auth
         const urlParams = new URLSearchParams(window.location.search);
         const googleAuth = urlParams.get('auth') === 'google';
-
+        const googleAuthInProgress = sessionStorage.getItem('googleAuthInProgress');
+        
         if (googleAuth) {
-          console.log('Handling Google auth redirect');
+          ignoreRedirects = true;
+          // Clear the Google auth in progress flag
+          sessionStorage.removeItem('googleAuthInProgress');
+          
+          // Immediately clear URL parameters to prevent refresh issues
+          window.history.replaceState({}, document.title, window.location.pathname);
+          
+          // If we have URL user data, use it immediately
           const urlUser = urlParams.get('user');
           if (urlUser) {
-            const userData = JSON.parse(decodeURIComponent(urlUser));
-            if (isMounted) {
-              console.log('Setting user from Google auth:', userData);
-              setUser(userData);
-              sessionStorage.setItem('user', JSON.stringify(userData));
-              setLoading(false);
-              window.history.replaceState({}, document.title, '/chat');
-              navigate('/chat');
-              return;
+            try {
+              const userData = JSON.parse(decodeURIComponent(urlUser));
+              if (isMounted) {
+                setUser(userData);
+                setLoading(false);
+                sessionStorage.setItem('user', JSON.stringify(userData));
+              }
+              return; // Skip further verification
+            } catch (e) {
+              console.error("Error parsing user data from URL", e);
             }
-          } else {
-            console.error("No user data in Google auth redirect");
           }
         }
-
+        
         const error = urlParams.get('error');
         if (error === 'auth_failed') {
           console.error('Google authentication failed');
-          if (isMounted) {
-            setUser(null);
-            sessionStorage.removeItem('user');
-            setLoading(false);
-            navigate('/login');
-          }
+          if (isMounted) setUser(null);
+          if (isMounted) setLoading(false);
+          navigate('/login');
           return;
         }
 
-        console.log('Checking auth status with /auth/check-auth');
         const response = await fetchWithCredentials('/auth/check-auth');
         const data = await response.json();
-        console.log('Auth check response:', data);
-
+        
+        
         if (isMounted) {
           setUser(data);
-          sessionStorage.setItem('user', JSON.stringify(data));
           setLoading(false);
+          
+          // IMPORTANT: Store user in sessionStorage as a backup
+          sessionStorage.setItem('user', JSON.stringify(data));
+        }
+        
+        // Only handle redirects if not ignoring them
+        if (!ignoreRedirects && !googleAuth) {
           const intendedPath = localStorage.getItem('intendedPath');
-          if (intendedPath && intendedPath !== window.location.pathname) {
+          if (intendedPath) {
             localStorage.removeItem('intendedPath');
             navigate(intendedPath);
           }
         }
       } catch (error) {
-        console.error("Auth verification failed:", error.stack);
+        console.error("Auth verification failed:", error);
         if (isMounted) {
+          setUser(null);
           setLoading(false);
-          const currentPath = window.location.pathname;
-          const nonAuthPaths = ['/login', '/signup', '/'];
-          if (!nonAuthPaths.includes(currentPath)) {
-            console.log('Redirecting to /login due to auth failure');
-            navigate('/login');
-          }
+          // Clear backup user data
+          sessionStorage.removeItem('user');
+        }
+        
+        // Only redirect if not ignoring redirects and not on non-auth paths
+        const nonAuthPaths = ['/login', '/signup', '/'];
+        if (!ignoreRedirects && !nonAuthPaths.includes(window.location.pathname)) {
+          navigate('/login');
         }
       }
     };
 
     verifyUser();
+    
     return () => {
       isMounted = false;
     };
@@ -137,17 +134,12 @@ export const AuthProvider = ({ children }) => {
 
   const checkAuthStatus = async () => {
     try {
-      console.log('Manual auth status check');
       const response = await fetchWithCredentials('/auth/check-auth');
       const data = await response.json();
       setUser(data);
-      sessionStorage.setItem('user', JSON.stringify(data));
-      return data;
     } catch (error) {
-      console.error("Manual auth check failed:", error.stack);
+      console.error("Auth check failed:", error);
       setUser(null);
-      sessionStorage.removeItem('user');
-      throw error;
     } finally {
       setLoading(false);
     }
@@ -155,76 +147,50 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      console.log('Attempting login for:', email);
       const response = await fetchWithCredentials('/auth/login', {
         method: 'POST',
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password })
       });
       
-      // Check if you can access the cookies
-      console.log("Cookies after login:", document.cookie);
-      
       const data = await response.json();
-      console.log('Login successful:', data);
-      
-      // Check if data is valid
-      if (!data || !data._id) {
-        console.error("Login response missing user data:", data);
-        throw new Error("Invalid response from server");
-      }
-      
       setUser(data);
-      sessionStorage.setItem('user', JSON.stringify(data));
-      
-      // Verify authentication immediately
-      try {
-        await checkAuthStatus();
-      } catch (authError) {
-        console.warn("Post-login auth check failed:", authError);
-      }
-      
       navigate("/chat");
       return data;
     } catch (error) {
-      console.error("Login failed:", error.stack);
       throw new Error(error.message || 'Login failed');
     }
   };
 
   const signup = async (name, email, password) => {
     try {
-      console.log('Attempting signup for:', email);
       const response = await fetchWithCredentials('/auth/signup', {
         method: 'POST',
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name, email, password })
       });
+      
       const data = await response.json();
-      console.log('Signup successful:', data);
       setUser(data);
-      sessionStorage.setItem('user', JSON.stringify(data));
       navigate("/chat");
       return data;
     } catch (error) {
-      console.error("Signup failed:", error.stack);
       throw new Error(error.message || 'Signup failed');
     }
   };
 
   const logout = async () => {
     try {
-      console.log('Attempting logout');
       await fetchWithCredentials('/auth/logout', { method: 'POST' });
       setUser(null);
-      sessionStorage.removeItem('user');
       navigate("/login");
     } catch (error) {
-      console.error("Logout failed:", error.stack);
+      console.error("Logout failed:", error);
     }
   };
-
+  
   const signInWithGoogle = () => {
-    console.log('Initiating Google sign-in');
+    // Store the current path before redirecting to Google
     localStorage.setItem('intendedPath', window.location.pathname === '/login' ? '/chat' : window.location.pathname);
+    // Set a flag to indicate we're starting Google auth flow
     sessionStorage.setItem('googleAuthInProgress', 'true');
     window.location.href = `${API_URL}/auth/google`;
   };
