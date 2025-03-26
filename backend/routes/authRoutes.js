@@ -11,7 +11,10 @@ router.get('/check-auth', protectRoutes, checkAuth);
 router.get('/profile', protectRoutes, getProfile);
 
 // Google Auth Routes
-router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+router.get('/google', passport.authenticate('google', {
+  scope: ['profile', 'email'],
+  session: false
+}));
 router.get('/google/callback', googleCallback);
 
 module.exports = router;
