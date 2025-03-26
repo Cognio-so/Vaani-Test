@@ -25,20 +25,35 @@ export const AuthProvider = ({ children }) => {
     };
 
     try {
-      const response = await fetch(`${API_URL}${endpoint}`, defaultOptions);
+      console.log(`Fetching ${endpoint} with options:`, {
+        ...defaultOptions,
+        body: defaultOptions.body ? '[BODY CONTENT]' : undefined // Don't log sensitive data
+      });
       
+      const response = await fetch(`${API_URL}${endpoint}`, defaultOptions);
+      console.log(`Response from ${endpoint}: Status ${response.status}`);
       
       if (!response.ok) {
-        const data = await response.text();
-        console.error('Response error:', response.status, data);
-        if (response.status === 401) {
-          setUser(null);
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch {
+          errorData = { message: await response.text() || 'Unknown error' };
         }
-        throw new Error(`HTTP error! status: ${response.status}`);
+        
+        console.error(`Fetch error at ${endpoint}: ${response.status}`, errorData);
+        
+        if (response.status === 401) {
+          console.log("401 Unauthorized detected, clearing user state");
+          setUser(null);
+          sessionStorage.removeItem('user');
+        }
+        
+        throw new Error(`HTTP error! status: ${response.status} - ${errorData.message || 'No message'}`);
       }
       return response;
     } catch (error) {
-      console.error('Fetch error:', error);
+      console.error(`FetchWithCredentials error for ${endpoint}:`, error);
       throw error;
     }
   };
@@ -153,10 +168,27 @@ export const AuthProvider = ({ children }) => {
       });
       
       const data = await response.json();
+      console.log('Login successful, user data:', data);
+      
+      // Store user in state and sessionStorage
       setUser(data);
+      sessionStorage.setItem('user', JSON.stringify(data));
+      
+      // Verify the cookie was set properly by making an immediate auth check
+      try {
+        console.log('Verifying authentication after login...');
+        const verifyResponse = await fetchWithCredentials('/auth/check-auth');
+        const verifyData = await verifyResponse.json();
+        console.log('Authentication verified after login:', verifyData);
+      } catch (verifyError) {
+        console.error('Auth verification after login failed:', verifyError);
+        // Continue despite error - user may still be logged in
+      }
+      
       navigate("/chat");
       return data;
     } catch (error) {
+      console.error('Login failed:', error);
       throw new Error(error.message || 'Login failed');
     }
   };
