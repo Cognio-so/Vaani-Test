@@ -90,7 +90,7 @@ export const AuthProvider = ({ children }) => {
       
       const data = await response.json();
       setUser(data);
-      navigate("/dashboard");
+      navigate("/chat");
       return data;
     } catch (error) {
       throw new Error(error.message || 'Login failed');
@@ -106,7 +106,7 @@ export const AuthProvider = ({ children }) => {
       
       const data = await response.json();
       setUser(data);
-      navigate("/dashboard");
+      navigate("/chat");
       return data;
     } catch (error) {
       throw new Error(error.message || 'Signup failed');
