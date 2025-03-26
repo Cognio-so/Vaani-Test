@@ -208,7 +208,7 @@ export const AuthProvider = ({ children }) => {
       sessionStorage.setItem('googleAuthInProgress', 'true');      
       // Add timestamp to prevent caching issues
       const timestamp = new Date().getTime();
-      const googleAuthUrl = `${backendUrl}/auth/google?t=${timestamp}`;
+      const googleAuthUrl = `${API_URL}/auth/google?t=${timestamp}`;
       
       // Use window.location.href for consistent behavior across platforms
       window.location.href = googleAuthUrl;
