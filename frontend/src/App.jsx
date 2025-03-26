@@ -13,7 +13,7 @@ export const ThemeContext = createContext();
 
 // Protected route component
 const ProtectedRoute = ({ children }) => {
-  const { user, loading } = useAuth();
+  const { user, loading, checkAuthStatus } = useAuth();
   const [localLoading, setLocalLoading] = useState(true);
   const [hasUser, setHasUser] = useState(false);
   
@@ -24,8 +24,9 @@ const ProtectedRoute = ({ children }) => {
     // Check if we're returning from Google auth
     const urlParams = new URLSearchParams(window.location.search);
     const googleAuth = urlParams.get('auth') === 'google';
+    const token = urlParams.get('token');
     
-    if (googleAuth) {
+    if (googleAuth || token) {
       setPreventRedirect(true);
       // Remove the parameters
       window.history.replaceState({}, document.title, window.location.pathname);
@@ -36,13 +37,15 @@ const ProtectedRoute = ({ children }) => {
     
     if (user) {
       setHasUser(true);
+      sessionStorage.setItem('user', JSON.stringify(user));
       setLocalLoading(false);
     } else if (savedUser) {
-      // Here's a potential issue - we need to parse the savedUser
       try {
         const parsedUser = JSON.parse(savedUser);
         if (parsedUser && Object.keys(parsedUser).length > 0) {
           setHasUser(true);
+          // Try to refresh auth status if we have a saved user but no current user
+          checkAuthStatus();
         }
       } catch (e) {
         console.error("Error parsing saved user:", e);
@@ -53,7 +56,7 @@ const ProtectedRoute = ({ children }) => {
       setHasUser(false);
       setLocalLoading(false);
     }
-  }, [user]);
+  }, [user, checkAuthStatus]);
   
   if (loading || localLoading) {
     return <LoadingSpinner /> 

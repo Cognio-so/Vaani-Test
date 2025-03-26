@@ -2,6 +2,7 @@ const User = require("../model/userModel");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const passport = require('../lib/passport');
+const { generateToken } = require("../lib/utils");
 
 const Signup = async (req, res) => {
   const { name, email, password } = req.body;
@@ -96,20 +97,6 @@ const getProfile = async (req, res) => {
     console.log("Error in get profile controller", error.message);
     res.status(500).json({ message: "Internal Server Error" });
   }
-};
-
-const generateToken = (userId, res) => {
-  const token = jwt.sign({ userId }, process.env.JWT_SECRET, {
-    expiresIn: '30d'
-  });
-
-  res.cookie('jwt', token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production", // Secure in production
-    sameSite: process.env.NODE_ENV === "production" ? 'none' : 'lax', // Cross-site in prod
-    path: '/',
-    maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
-  });
 };
 
 // Google auth callback handler

@@ -50,6 +50,8 @@ export const AuthProvider = ({ children }) => {
         if (token) {
           // Set cookie manually if received via URL
           document.cookie = `jwt=${token}; path=/; max-age=${30 * 24 * 60 * 60}; ${process.env.NODE_ENV === "production" ? 'secure; samesite=none' : 'samesite=lax'}`;
+          // Store user in sessionStorage as a fallback
+          sessionStorage.setItem('auth_token', token);
           // Clear URL params to prevent reuse
           window.history.replaceState({}, document.title, window.location.pathname);
         }
@@ -57,9 +59,12 @@ export const AuthProvider = ({ children }) => {
         const response = await fetchWithCredentials('/auth/check-auth');
         const data = await response.json();
         setUser(data);
+        // Store user in sessionStorage
+        sessionStorage.setItem('user', JSON.stringify(data));
       } catch (error) {
         console.error("Auth verification failed:", error);
         setUser(null);
+        sessionStorage.removeItem('user');
       } finally {
         setLoading(false);
       }
@@ -90,6 +95,8 @@ export const AuthProvider = ({ children }) => {
       
       const data = await response.json();
       setUser(data);
+      // Store user in sessionStorage
+      sessionStorage.setItem('user', JSON.stringify(data));
       navigate("/chat");
       return data;
     } catch (error) {
@@ -106,6 +113,8 @@ export const AuthProvider = ({ children }) => {
       
       const data = await response.json();
       setUser(data);
+      // Store user in sessionStorage
+      sessionStorage.setItem('user', JSON.stringify(data));
       navigate("/chat");
       return data;
     } catch (error) {
@@ -117,6 +126,9 @@ export const AuthProvider = ({ children }) => {
     try {
       await fetchWithCredentials('/auth/logout', { method: 'POST' });
       setUser(null);
+      // Clear sessionStorage
+      sessionStorage.removeItem('user');
+      sessionStorage.removeItem('auth_token');
       navigate("/login");
     } catch (error) {
       console.error("Logout failed:", error);
