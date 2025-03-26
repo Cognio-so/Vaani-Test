@@ -178,11 +178,8 @@ const Sidebar = ({ isVisible, onToggle, onOpenSettings, onOpenHistory, onNewChat
                             {/* Profile Info Container - Shown when profile is clicked */}
                             {showProfileInfo && (
                                 <div className={`absolute ${
-                                    // Adjust positioning based on sidebar width
-                                    isVisible ? 'lg:left-full lg:ml-2 left-0' : 'left-0'
-                                } ${
-                                    // Adjust vertical positioning
-                                    isVisible ? 'lg:bottom-0 bottom-full' : 'bottom-full'
+                                    // Adjust positioning to appear above the profile button
+                                    isVisible ? 'lg:left-full lg:ml-2 left-0 bottom-[150%]' : 'left-0 bottom-[150%]'
                                 } mb-2 w-64 sm:w-72 ${
                                     theme === 'dark' 
                                         ? 'bg-black/90 backdrop-blur-xl shadow-[0_0_15px_rgba(204,43,94,0.3)] border border-[#cc2b5e]/20' 
