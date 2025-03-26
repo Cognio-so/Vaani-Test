@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 const AuthContext = createContext();
 
-const API_URL = import.meta.env.REACT_APP_API_URL || 'https://vanni-test-backend.vercel.app';
+const API_URL = import.meta.env.BACKEND_URL || 'https://vanni-test-backend.vercel.app';
 
 export const AuthProvider = ({ children }) => {
   // Initialize user from sessionStorage if available

@@ -123,11 +123,11 @@ const googleAuth = passport.authenticate('google', {
 const googleCallback = async (req, res, next) => {
   passport.authenticate('google', {
     session: false,
-    failureRedirect: `${process.env.FRONTEND_URL || 'https://vanni-test.vercel.app'}/login?error=auth_failed`
+    failureRedirect: `${process.env.FRONTEND_URL || 'https://vanni-test-frontend.vercel.app'}/login?error=auth_failed`
   }, (err, userObj) => {
     if (err || !userObj || !userObj.token) {
       console.error('Google auth error:', err);
-      return res.redirect(`${process.env.FRONTEND_URL || 'https://vanni-test.vercel.app'}/login?error=auth_failed`);
+      return res.redirect(`${process.env.FRONTEND_URL || 'https://vanni-test-frontend.vercel.app'}/login?error=auth_failed`);
     }
 
     try {
@@ -148,11 +148,11 @@ const googleCallback = async (req, res, next) => {
         email: userObj.user.email
       }));
       
-      const redirectUrl = `${process.env.FRONTEND_URL || 'https://vanni-test.vercel.app'}/chat?auth=google&user=${userInfo}`;
+      const redirectUrl = `${process.env.FRONTEND_URL || 'https://vanni-test-frontend.vercel.app'}/chat?auth=google&user=${userInfo}`;
       res.redirect(redirectUrl);
     } catch (error) {
       console.error('Google auth callback error:', error);
-      res.redirect(`${process.env.FRONTEND_URL || 'https://vanni-test.vercel.app'}/login?error=auth_failed`);
+      res.redirect(`${process.env.FRONTEND_URL || 'https://vanni-test-frontend.vercel.app'}/login?error=auth_failed`);
     }
   })(req, res, next);
 };
