@@ -1,11 +1,8 @@
-const dotenv = require("dotenv");
-// Load environment variables before any other imports
-dotenv.config();
-
+require("dotenv").config();
 const express = require("express");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
-const connectDB = require("./lib/db");
+const mongoose = require("mongoose");
 const passport = require("./lib/passport");
 const authRoutes = require("./routes/authRoutes");
 const emailRoutes = require("./routes/emailRoutes");
@@ -14,8 +11,23 @@ const chatRoutes = require("./routes/chatRoutes");
 
 const app = express();
 
+// Database connection
+const connectDB = async () => {
+  try {
+    if (!process.env.MONGO_URI) throw new Error('MONGO_URI is not defined');
+    await mongoose.connect(process.env.MONGO_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+    console.log('MongoDB connected');
+  } catch (error) {
+    console.error('MongoDB connection error:', error.stack);
+    process.exit(1);
+  }
+};
+
 // Validate critical environment variables
-const requiredEnvVars = ["JWT_SECRET", "GEMINI_API_KEY", "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET"];
+const requiredEnvVars = ["JWT_SECRET", "GEMINI_API_KEY", "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "FRONTEND_URL", "BACKEND_URL", "MONGO_URI"];
 requiredEnvVars.forEach((varName) => {
   if (!process.env[varName]) {
     console.error(`Error: Environment variable ${varName} is not set`);
@@ -24,38 +36,21 @@ requiredEnvVars.forEach((varName) => {
 });
 
 // Middleware
-app.use(express.json({ limit: "10mb" })); // Increase payload limit for voice data
+app.use(express.json({ limit: "10mb" }));
 app.use(cookieParser());
-
-// CORS configuration
-app.use(
-  cors({
-    origin: [
-      "https://vanni-test-frontend.vercel.app",
-      "http://localhost:5173",
-    ],
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "Cookie", "Accept"],
-    exposedHeaders: ["Set-Cookie"],
-  })
-);
-
-// Enable trust proxy for Vercel
+app.use(cors({
+  origin: [process.env.FRONTEND_URL, "http://localhost:5173"],
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "Cookie", "Accept"],
+  exposedHeaders: ["Set-Cookie"],
+}));
 app.set("trust proxy", 1);
-
-// Initialize Passport (no session support needed)
 app.use(passport.initialize());
 
 // Routes
-app.get("/health", (req, res) => {
-  res.status(200).json({ status: "ok" });
-});
-
-app.get("/", (req, res) => {
-  res.send("Hello World");
-});
-
+app.get("/health", (req, res) => res.status(200).json({ status: "ok" }));
+app.get("/", (req, res) => res.send("Hello World"));
 app.use("/auth", authRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/chat", chatRoutes);
@@ -71,9 +66,13 @@ app.use((err, req, res, next) => {
   });
 });
 
+// Start server
 const PORT = process.env.PORT || 5000;
+const startServer = async () => {
+  await connectDB(); // Connect to DB before listening
+  app.listen(PORT, () => {
+    console.log(`✨ Server running on port ${PORT}`);
+  });
+};
 
-app.listen(PORT, () => {
-  console.log(`✨ Server running on port ${PORT}`);
-  connectDB();
-});
+startServer();
