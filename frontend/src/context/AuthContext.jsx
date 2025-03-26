@@ -24,14 +24,20 @@ export const AuthProvider = ({ children }) => {
       ...options
     };
 
+    console.log(`Making request to: ${API_URL}${endpoint}`);
+    console.log('Request options:', defaultOptions);
+    
     try {
       const response = await fetch(`${API_URL}${endpoint}`, defaultOptions);
       
+      // Log cookie information (for debugging only, remove in production)
+      console.log('Cookies sent with request:', document.cookie);
       
       if (!response.ok) {
         const data = await response.text();
         console.error('Response error:', response.status, data);
         if (response.status === 401) {
+          console.log('Unauthorized - clearing user state');
           setUser(null);
         }
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -147,16 +153,21 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
+      console.log('Attempting login with:', { email });
       const response = await fetchWithCredentials('/auth/login', {
         method: 'POST',
         body: JSON.stringify({ email, password })
       });
       
+      console.log('Login response status:', response.status);
       const data = await response.json();
+      console.log('Login successful, user data:', data);
+      
       setUser(data);
       navigate("/chat");
       return data;
     } catch (error) {
+      console.error('Login error:', error);
       throw new Error(error.message || 'Login failed');
     }
   };

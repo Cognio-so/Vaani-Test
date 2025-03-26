@@ -86,8 +86,8 @@ const Logout = async (req, res) => {
   try {
     res.cookie('jwt', '', {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? 'none' : 'lax',
+      secure:true,
+      sameSite: 'none',
       path: '/',
       maxAge: 0
     });
@@ -137,8 +137,8 @@ const googleCallback = async (req, res, next) => {
       // Use the same cookie settings as in generateToken
       res.cookie('jwt', userObj.token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        secure:true,
+        sameSite: 'none',
         path: '/',
         maxAge: 30 * 24 * 60 * 60 * 1000
       });
