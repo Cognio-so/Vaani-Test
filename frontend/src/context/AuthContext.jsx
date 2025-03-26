@@ -199,11 +199,49 @@ export const AuthProvider = ({ children }) => {
   };
   
   const signInWithGoogle = () => {
-    // Store the current path before redirecting to Google
-    localStorage.setItem('intendedPath', window.location.pathname === '/login' ? '/chat' : window.location.pathname);
-    // Set a flag to indicate we're starting Google auth flow
-    sessionStorage.setItem('googleAuthInProgress', 'true');
-    window.location.href = `${API_URL}/auth/google`;
+    try {
+      // Store current path before redirect
+      const currentPath = window.location.pathname;
+      localStorage.setItem('intendedPath', currentPath === '/login' ? '/chat' : currentPath);
+      
+      // Set auth flow flag
+      sessionStorage.setItem('googleAuthInProgress', 'true');      
+      // Add timestamp to prevent caching issues
+      const timestamp = new Date().getTime();
+      const googleAuthUrl = `${backendUrl}/auth/google?t=${timestamp}`;
+      
+      // Use window.location.href for consistent behavior across platforms
+      window.location.href = googleAuthUrl;
+    } catch (error) {
+      console.error('Google sign-in error:', error);
+      throw new Error('Failed to initiate Google sign-in');
+    }
+  };
+
+  // Add this function to handle Google auth callback
+  const handleGoogleAuthCallback = async () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const authType = urlParams.get('auth');
+    const userInfo = urlParams.get('user');
+
+    if (authType === 'google' && userInfo) {
+      try {
+        const userData = JSON.parse(decodeURIComponent(userInfo));
+        setUser(userData);
+        
+        // Clean up URL
+        window.history.replaceState({}, document.title, '/chat');
+        
+        // Clear auth flow flag
+        sessionStorage.removeItem('googleAuthInProgress');
+        
+        return true;
+      } catch (error) {
+        console.error('Error handling Google auth callback:', error);
+        return false;
+      }
+    }
+    return false;
   };
 
   return (
@@ -216,6 +254,7 @@ export const AuthProvider = ({ children }) => {
         logout,
         checkAuthStatus,
         signInWithGoogle,
+        handleGoogleAuthCallback,
       }}
     >
       {children}

@@ -17,46 +17,47 @@ const ProtectedRoute = ({ children }) => {
   const [localLoading, setLocalLoading] = useState(true);
   const [hasUser, setHasUser] = useState(false);
   
-  // Prevent navigation loops by checking URL parameters
-  const [preventRedirect, setPreventRedirect] = useState(false);
-  
   useEffect(() => {
-    // Check if we're returning from Google auth
-    const urlParams = new URLSearchParams(window.location.search);
-    const googleAuth = urlParams.get('auth') === 'google';
-    
-    if (googleAuth) {
-      setPreventRedirect(true);
-      // Remove the parameters
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
-    
-    // Double-check user from sessionStorage as a safeguard
-    const savedUser = sessionStorage.getItem('user');
-    
-    if (user) {
-      setHasUser(true);
+    const checkAuth = async () => {
+      // Check if returning from Google auth
+      const urlParams = new URLSearchParams(window.location.search);
+      const isGoogleAuth = urlParams.get('auth') === 'google';
+      
+      if (isGoogleAuth) {
+        const userInfo = urlParams.get('user');
+        if (userInfo) {
+          try {
+            const userData = JSON.parse(decodeURIComponent(userInfo));
+            sessionStorage.setItem('user', JSON.stringify(userData));
+            setHasUser(true);
+          } catch (error) {
+            console.error('Error parsing Google auth user data:', error);
+          }
+        }
+      } else if (user) {
+        setHasUser(true);
+      } else {
+        const savedUser = sessionStorage.getItem('user');
+        if (savedUser) {
+          setHasUser(true);
+        }
+      }
       setLocalLoading(false);
-    } else if (savedUser) {
-      setHasUser(true);
-      setLocalLoading(false);
-    } else {
-      setHasUser(false);
-      setLocalLoading(false);
-    }
+    };
+
+    checkAuth();
   }, [user]);
-  
+
   if (loading || localLoading) {
-    return <LoadingSpinner /> 
+    return <LoadingSpinner />;
   }
-  
-  
-  if (!hasUser && !preventRedirect) {
-    return <Navigate to="/login" />
+
+  if (!hasUser) {
+    return <Navigate to="/login" />;
   }
-  
+
   return children;
-}
+};
 
 function AppRoutes() {
   return (

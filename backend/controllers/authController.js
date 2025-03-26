@@ -126,32 +126,33 @@ const googleCallback = async (req, res, next) => {
   passport.authenticate('google', {
     session: false,
     failureRedirect: `${process.env.FRONTEND_URL}/login?error=auth_failed`
-  }, (err, userObj) => {
+  }, async (err, userObj) => {
     if (err || !userObj || !userObj.token) {
       console.error('Google auth error:', err);
       return res.redirect(`${process.env.FRONTEND_URL}/login?error=auth_failed`);
     }
 
     try {
+      // Set SameSite attribute based on environment
+      const isSecure = process.env.NODE_ENV === 'production';
       
-      // Use the same cookie settings as in generateToken
       res.cookie('jwt', userObj.token, {
         httpOnly: true,
-        secure:true,
-        sameSite: 'none',
+        secure: isSecure,
+        sameSite: isSecure ? 'none' : 'lax', // Use 'lax' for development
         path: '/',
         maxAge: 30 * 24 * 60 * 60 * 1000
       });
 
-      // Pass along user info in the URL for emergency fallback
+      // Enhanced error handling for user info
       const userInfo = encodeURIComponent(JSON.stringify({
         id: userObj.user._id,
         name: userObj.user.name,
-        email: userObj.user.email
+        email: userObj.user.email,
+        profilePicture: userObj.user.profilePicture
       }));
       
-      const redirectUrl = `${process.env.FRONTEND_URL}/chat?auth=google&user=${userInfo}`;
-      res.redirect(redirectUrl);
+      res.redirect(`${process.env.FRONTEND_URL}/chat?auth=google&user=${userInfo}`);
     } catch (error) {
       console.error('Google auth callback error:', error);
       res.redirect(`${process.env.FRONTEND_URL}/login?error=auth_failed`);
