@@ -23,18 +23,35 @@ export const AuthProvider = ({ children }) => {
       ...options,
     };
 
+    if (options.headers) {
+      defaultOptions.headers = {
+        ...defaultOptions.headers,
+        ...options.headers,
+      };
+    }
+
     try {
-      console.log(`Fetching ${endpoint} with credentials`);
+      console.log(`Fetching ${API_URL}${endpoint} with credentials and options:`, defaultOptions);
       const response = await fetch(`${API_URL}${endpoint}`, defaultOptions);
+      
+      console.log(`Response from ${endpoint}: Status ${response.status}`);
+      
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-        console.error(`Fetch error at ${endpoint}: ${response.status}`, errorData);
+        let errorMessage = 'Unknown error';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || 'Unknown error';
+          console.error(`Fetch error at ${endpoint}: ${response.status}`, errorData);
+        } catch (jsonError) {
+          console.error(`Could not parse error response: ${jsonError}`);
+        }
+        
         if (response.status === 401) {
           console.log("401 Unauthorized detected, clearing user state");
           setUser(null);
           sessionStorage.removeItem('user');
         }
-        throw new Error(`HTTP error! status: ${response.status} - ${errorData.message || 'No message'}`);
+        throw new Error(`HTTP error! status: ${response.status} - ${errorMessage}`);
       }
       return response;
     } catch (error) {
@@ -143,10 +160,29 @@ export const AuthProvider = ({ children }) => {
         method: 'POST',
         body: JSON.stringify({ email, password }),
       });
+      
+      // Check if you can access the cookies
+      console.log("Cookies after login:", document.cookie);
+      
       const data = await response.json();
       console.log('Login successful:', data);
+      
+      // Check if data is valid
+      if (!data || !data._id) {
+        console.error("Login response missing user data:", data);
+        throw new Error("Invalid response from server");
+      }
+      
       setUser(data);
       sessionStorage.setItem('user', JSON.stringify(data));
+      
+      // Verify authentication immediately
+      try {
+        await checkAuthStatus();
+      } catch (authError) {
+        console.warn("Post-login auth check failed:", authError);
+      }
+      
       navigate("/chat");
       return data;
     } catch (error) {

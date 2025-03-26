@@ -8,16 +8,29 @@ const protectRoutes = async (req, res, next) => {
       throw new Error("JWT_SECRET is not defined");
     }
 
+    // Log the full cookie object and headers
     console.log("protectRoutes: Incoming cookies:", req.cookies);
+    console.log("protectRoutes: Headers:", req.headers);
+    
     const token = req.cookies.jwt;
 
     if (!token) {
       console.error("protectRoutes: No JWT token found in cookies");
-      return res.status(401).json({ message: "No token, authorization denied" });
+      // Try to get token from Authorization header as fallback
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const headerToken = authHeader.split(' ')[1];
+        console.log("protectRoutes: Found token in Authorization header");
+        req.token = headerToken;
+      } else {
+        return res.status(401).json({ message: "No token, authorization denied" });
+      }
+    } else {
+      req.token = token;
     }
 
-    console.log("protectRoutes: Verifying token:", token);
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log("protectRoutes: Verifying token");
+    const decoded = jwt.verify(req.token, process.env.JWT_SECRET);
     console.log("protectRoutes: Token decoded:", decoded);
 
     const user = await User.findById(decoded.userId).select("-password");
