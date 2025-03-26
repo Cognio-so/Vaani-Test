@@ -88,22 +88,12 @@ const Logout = async (req, res) => {
   }
 };
 
-const checkAuth = async (req, res) => {
+export const checkAuth = (req, res) => {
   try {
-    validateEnv();
-    if (!req.user) {
-      console.error("checkAuth: No user found in request");
-      return res.status(401).json({ message: "Not authenticated" });
-    }
-    console.log("checkAuth: User authenticated:", req.user.email);
-    res.status(200).json({
-      _id: req.user._id,
-      name: req.user.name,
-      email: req.user.email
-    });
+    res.status(200).json(req.user);
   } catch (error) {
-    console.error("Error in checkAuth controller:", error.stack);
-    res.status(500).json({ message: "Internal Server Error", error: error.message });
+    console.log("Error in checkAuth controller", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
   }
 };
 
