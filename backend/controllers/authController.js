@@ -22,34 +22,22 @@ const Signup = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, salt);
 
     const newUser = new User({ name, email, password: hashedPassword });
-    await newUser.save();
 
-    // Generate token
-    const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET, {
-      expiresIn: '30d'
-    });
-    
-    // Set cookie
-    res.cookie('jwt', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-      path: '/',
-      maxAge: 30 * 24 * 60 * 60 * 1000
-    });
-    
-    // Also send token in header and body
-    res.set('x-auth-token', token);
+    if (newUser) {
+      generateToken(newUser._id, res);
+      await newUser.save();
 
-    res.status(201).json({
-      _id: newUser._id,
-      name: newUser.name,
-      email: newUser.email,
-      token: token // Include token in response body
-    });
+      res.status(201).json({
+        _id: newUser._id,
+        name: newUser.name,
+        email: newUser.email,
+      });
+    } else {
+      res.status(400).json({ message: "Invalid user data" });
+    }
   } catch (error) {
-    console.error("Error in signup controller:", error);
-    res.status(500).json({ message: "Internal Server Error", error: error.message });
+    console.log("Error in signup controller", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
   }
 };
 
@@ -63,33 +51,16 @@ const Login = async (req, res) => {
     const isPasswordCorrect = await bcrypt.compare(password, user.password);
     if (!isPasswordCorrect) return res.status(400).json({ message: "Invalid password" });
 
-    // Generate token
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
-      expiresIn: '30d'
-    });
-    
-    // Set cookie (may or may not work across domains)
-    res.cookie('jwt', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-      path: '/',
-      maxAge: 30 * 24 * 60 * 60 * 1000
-    });
-    
-    // Also send token in header and body (guaranteed to work)
-    res.set('x-auth-token', token);
-    
-    // Return user data
+    generateToken(user._id, res);
+
     res.status(200).json({
       _id: user._id,
       name: user.name,
       email: user.email,
-      token: token // Include token in response body
     });
   } catch (error) {
-    console.error("Error in login controller:", error);
-    res.status(500).json({ message: "Internal Server Error", error: error.message });
+    console.log("Error in login controller", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
   }
 };
 
@@ -97,8 +68,8 @@ const Logout = async (req, res) => {
   try {
     res.cookie('jwt', '', {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? 'none' : 'lax',
+      secure: process.env.NODE_ENV === "production", // Secure only in production
+      sameSite: process.env.NODE_ENV === "production" ? 'none' : 'lax', // Cross-site in prod
       path: '/',
       maxAge: 0
     });
@@ -111,15 +82,10 @@ const Logout = async (req, res) => {
 
 const checkAuth = async (req, res) => {
   try {
-    if (!req.user) {
-      console.log("checkAuth: No user in request object");
-      return res.status(401).json({ message: "Not authenticated" });
-    }
-    console.log("checkAuth: User authenticated successfully:", req.user.email);
     res.status(200).json(req.user);
   } catch (error) {
-    console.error("Error in checkAuth controller:", error.stack);
-    res.status(500).json({ message: "Internal Server Error", error: error.message });
+    console.log("Error in check auth controller", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
   }
 };
 
@@ -133,79 +99,42 @@ const getProfile = async (req, res) => {
 };
 
 const generateToken = (userId, res) => {
+  const token = jwt.sign({ userId }, process.env.JWT_SECRET, {
+    expiresIn: '30d'
+  });
+
+  res.cookie('jwt', token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production", // Secure in production
+    sameSite: process.env.NODE_ENV === "production" ? 'none' : 'lax', // Cross-site in prod
+    path: '/',
+    maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+  });
+};
+
+// Google auth callback handler
+const googleCallback = (req, res) => {
   try {
-    if (!process.env.JWT_SECRET) {
-      throw new Error("JWT_SECRET is not defined");
+    if (!req.user || !req.user.token) {
+      throw new Error('Google authentication failed');
     }
-    
-    const token = jwt.sign({ userId }, process.env.JWT_SECRET, {
-      expiresIn: '30d'
-    });
-    
-    // Use consistent cookie settings across the application
-    res.cookie('jwt', token, {
+
+    // Set the JWT cookie
+    res.cookie('jwt', req.user.token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? 'none' : 'lax',
       path: '/',
       maxAge: 30 * 24 * 60 * 60 * 1000
     });
-    
-    console.log("Token generated and cookie set for userId:", userId);
-    return token;
+
+    // Redirect with token as query param for fallback
+    const redirectUrl = `${process.env.FRONTEND_URL || 'https://smith-frontend.vercel.app'}/chat?token=${req.user.token}`;
+    res.redirect(redirectUrl);
   } catch (error) {
-    console.error("Error in generateToken:", error);
-    throw error;
+    console.error('Google auth callback error:', error);
+    res.redirect(`${process.env.FRONTEND_URL || 'https://smith-frontend.vercel.app'}/login?error=auth_failed`);
   }
 };
 
-const googleAuth = passport.authenticate('google', {
-  scope: ['profile', 'email'],
-  session: false
-});
-
-const googleCallback = async (req, res, next) => {
-  passport.authenticate('google', {
-    session: false,
-    failureRedirect: `${process.env.FRONTEND_URL || 'https://vanni-test-frontend.vercel.app'}/login?error=auth_failed`
-  }, (err, userObj) => {
-    if (err || !userObj || !userObj.token) {
-      console.error('Google auth error:', err);
-      return res.redirect(`${process.env.FRONTEND_URL || 'https://vanni-test-frontend.vercel.app'}/login?error=auth_failed`);
-    }
-
-    try {
-      // Set cookie
-      res.cookie('jwt', userObj.token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-        path: '/',
-        maxAge: 30 * 24 * 60 * 60 * 1000
-      });
-
-      // Pass along user info AND token in the URL
-      const userInfo = encodeURIComponent(JSON.stringify({
-        _id: userObj.user._id,
-        name: userObj.user.name,
-        email: userObj.user.email
-      }));
-      
-      const redirectUrl = `${process.env.FRONTEND_URL || 'https://vanni-test-frontend.vercel.app'}/chat?auth=google&user=${userInfo}&token=${userObj.token}`;
-      res.redirect(redirectUrl);
-    } catch (error) {
-      console.error('Google auth callback error:', error);
-      res.redirect(`${process.env.FRONTEND_URL || 'https://vanni-test-frontend.vercel.app'}/login?error=auth_failed`);
-    }
-  })(req, res, next);
-};
-
-module.exports = { 
-  Signup, 
-  Login, 
-  Logout, 
-  checkAuth, 
-  getProfile, 
-  googleAuth,
-  googleCallback 
-};
+module.exports = { Signup, Login, Logout, checkAuth, getProfile, googleCallback };
