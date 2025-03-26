@@ -8,7 +8,6 @@ const sendEmail = async (req, res) => {
         const { email, content, subject } = req.body;
         const userId = req.user._id;
 
-        console.log('Starting email send process with:', { email, subject });
 
         // Clean the content before generating PDF
         const cleanContent = content.map(message => ({
@@ -18,7 +17,6 @@ const sendEmail = async (req, res) => {
 
         // Generate PDF
         const pdfPath = await generatePDF(cleanContent);
-        console.log('PDF generated at:', pdfPath);
 
         // Convert PDF to base64
         const pdfBase64 = fs.readFileSync(pdfPath, { encoding: 'base64' });

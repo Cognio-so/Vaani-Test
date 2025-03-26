@@ -5,20 +5,74 @@ import SignupPage from './pages/SignupPage'
 import LoginPage from './pages/LoginPage'
 import Settings from './components/Settings'
 import HomePage from './pages/Homepage'
+import LoadingSpinner from './components/LoadingSpinner'
+import { AuthProvider, useAuth } from './context/AuthContext'
 
+// Create Theme Context
 export const ThemeContext = createContext();
+
+// Protected route component
+const ProtectedRoute = ({ children }) => {
+  const { user, loading } = useAuth();
+  const [localLoading, setLocalLoading] = useState(true);
+  const [hasUser, setHasUser] = useState(false);
+  
+  // Prevent navigation loops by checking URL parameters
+  const [preventRedirect, setPreventRedirect] = useState(false);
+  
+  useEffect(() => {
+    // Check if we're returning from Google auth
+    const urlParams = new URLSearchParams(window.location.search);
+    const googleAuth = urlParams.get('auth') === 'google';
+    
+    if (googleAuth) {
+      setPreventRedirect(true);
+      // Remove the parameters
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+    
+    // Double-check user from sessionStorage as a safeguard
+    const savedUser = sessionStorage.getItem('user');
+    
+    if (user) {
+      setHasUser(true);
+      setLocalLoading(false);
+    } else if (savedUser) {
+      setHasUser(true);
+      setLocalLoading(false);
+    } else {
+      setHasUser(false);
+      setLocalLoading(false);
+    }
+  }, [user]);
+  
+  if (loading || localLoading) {
+    return <LoadingSpinner /> 
+  }
+  
+  
+  if (!hasUser && !preventRedirect) {
+    return <Navigate to="/login" />
+  }
+  
+  return children;
+}
 
 function AppRoutes() {
   return (
     <Routes>
       <Route path='/' element={<HomePage />} />
       <Route path='/chat' element={
+        <ProtectedRoute>
           <ChatPage />
+        </ProtectedRoute>
       } />
       <Route path='/signup' element={<SignupPage />} />
       <Route path='/login' element={<LoginPage />} />
       <Route path='/settings' element={
+        <ProtectedRoute>
           <Settings />
+        </ProtectedRoute>
       } />
     </Routes>
   )
@@ -50,7 +104,9 @@ function App() {
   return (
     <ThemeContext.Provider value={{ theme, setTheme }}>
       <Router>
+        <AuthProvider>
           <AppRoutes />
+        </AuthProvider>  
       </Router>
     </ThemeContext.Provider>
   )

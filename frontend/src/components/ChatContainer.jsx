@@ -15,8 +15,8 @@ import React, { useState, useEffect, useRef, useContext } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { ThemeContext } from '../App'
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://python-test-algohype.replit.app'
-const backend_url = import.meta.env.VITE_BACKEND_URL || 'https://vanni-test-backend.vercel.app'
+const API_URL = import.meta.env.VITE_API_URL 
+const backend_url = import.meta.env.VITE_BACKEND_URL 
 
 const ChatContainer = () => {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false)
@@ -35,8 +35,7 @@ const ChatContainer = () => {
   const [conversations, setConversations] = useState([])
   const { theme } = useContext(ThemeContext)
   const [isLoadingChat, setIsLoadingChat] = useState(false)
-  const [isEditingTitle, setIsEditingTitle] = useState(false)
-  const [editedTitle, setEditedTitle] = useState("")
+
   
   // Add these missing useRef declarations
   const chatIdRef = useRef(`temp_${Date.now()}`)

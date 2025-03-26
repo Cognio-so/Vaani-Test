@@ -79,14 +79,8 @@ const Settings = ({ isOpen, onClose }) => {
                         <h3 className={`text-xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>Account Settings</h3>
                         <div className="space-y-4">
                             <div className="flex items-center space-x-4">
-                                <div className={`w-16 h-16 ${theme === 'dark' ? 'bg-black/40 border-white/10' : 'bg-gray-100 border-gray-300'} rounded-full border flex items-center justify-center overflow-hidden`}>
-                                    {user && user.profilePicture ? (
-                                        <img 
-                                            src={user.profilePicture} 
-                                            alt={user.name} 
-                                            className="w-full h-full object-cover"
-                                        />
-                                    ) : user && user.name ? (
+                                <div className={`w-16 h-16 ${theme === 'dark' ? 'bg-black/40 border-white/10' : 'bg-gray-100 border-gray-300'} rounded-full border flex items-center justify-center`}>
+                                    {user && user.name ? (
                                         <span className={`text-xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>
                                             {user.name.charAt(0).toUpperCase()}
                                         </span>

@@ -128,7 +128,7 @@ exports.getChatHistory = async (req, res) => {
 exports.updateChat = async (req, res) => {
     try {
         const { chatId } = req.params;
-        const { title, messages } = req.body;
+        const { title, messages, preserveTimestamp } = req.body;
         const userId = req.user._id;
 
         if (!messages?.length) {
@@ -138,7 +138,37 @@ exports.updateChat = async (req, res) => {
             });
         }
 
-        const chat = await Chat.updateWithMessages(userId, chatId, messages, title);
+        // Find the existing chat to maybe preserve its timestamp
+        let chat;
+        
+        if (preserveTimestamp) {
+            // Get existing chat to preserve its timestamp
+            const existingChat = await Chat.findOne({ chatId, userId });
+            
+            if (existingChat) {
+                // Use updateOne to explicitly set the lastUpdated field to its original value
+                await Chat.updateOne(
+                    { chatId, userId },
+                    { 
+                        $set: {
+                            title,
+                            messages,
+                            // Keep the original timestamp
+                            lastUpdated: existingChat.lastUpdated
+                        }
+                    }
+                );
+                
+                // Get the updated chat
+                chat = await Chat.findOne({ chatId, userId });
+            } else {
+                // If chat doesn't exist, create it normally
+                chat = await Chat.updateWithMessages(userId, chatId, messages, title);
+            }
+        } else {
+            // Normal update with new timestamp
+            chat = await Chat.updateWithMessages(userId, chatId, messages, title);
+        }
 
         if (!chat) {
             return res.status(404).json({

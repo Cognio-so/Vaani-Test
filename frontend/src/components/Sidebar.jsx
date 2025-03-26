@@ -8,6 +8,9 @@ import { useAuth } from '../context/AuthContext'; // Make sure this path is corr
 import { useContext } from 'react';
 import { ThemeContext } from '../App';
 
+const backend_url = import.meta.env.VITE_BACKEND_URL
+
+
 const Sidebar = ({ isVisible, onToggle, onOpenSettings, onOpenHistory, onNewChat }) => {
     const [showProfileInfo, setShowProfileInfo] = useState(false);
     const [profileData, setProfileData] = useState(null);
@@ -18,7 +21,7 @@ const Sidebar = ({ isVisible, onToggle, onOpenSettings, onOpenHistory, onNewChat
     // Fetch user profile data
     const fetchProfileData = async () => {
         try {
-            const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL || 'https://vanni-test-backend.vercel.app'}/auth/profile`, {
+            const response = await axios.get(`${backend_url}/auth/profile`, {
                 withCredentials: true
             });
             
@@ -41,7 +44,7 @@ const Sidebar = ({ isVisible, onToggle, onOpenSettings, onOpenHistory, onNewChat
     // Handle logout
     const handleLogout = async () => {
         try {
-            await axios.post(`${import.meta.env.VITE_BACKEND_URL || 'https://vanni-test-backend.vercel.app'}/auth/logout`, {}, {
+            await axios.post(`${backend_url}/auth/logout`, {}, {
                 withCredentials: true
             });
             
@@ -87,7 +90,7 @@ const Sidebar = ({ isVisible, onToggle, onOpenSettings, onOpenHistory, onNewChat
                 <div className="flex items-center space-x-0 justify-between mt-4">
                     
                     <div className="hidden md:flex items-center">
-                        <img src="/vannipro.png" alt="Vaani.pro Logo" className="w-8 h-6" />
+                        <img src="/vannipro.png" alt="Vaani.pro Logo" className="w-10 h-8" />    
                         <h1 className="hidden lg:block text-lg sm:text-xl font-bold ml-2 text-[#cc2b5e]">Vaani.pro</h1>
                     </div>
                     <button 
@@ -174,36 +177,97 @@ const Sidebar = ({ isVisible, onToggle, onOpenSettings, onOpenHistory, onNewChat
                             
                             {/* Profile Info Container - Shown when profile is clicked */}
                             {showProfileInfo && (
-                                <div className={`absolute bottom-full left-0 mb-2 w-56 ${
-                                    theme === 'dark' ? 'bg-black/90 backdrop-blur-xl shadow-[0_0_15px_rgba(204,43,94,0.3)] border border-[#cc2b5e]/20' : 'bg-white shadow-lg border border-gray-200'
+                                <div className={`absolute ${
+                                    // Adjust positioning based on sidebar width
+                                    isVisible ? 'lg:left-full lg:ml-2 left-0' : 'left-0'
+                                } ${
+                                    // Adjust vertical positioning
+                                    isVisible ? 'lg:bottom-0 bottom-full' : 'bottom-full'
+                                } mb-2 w-64 sm:w-72 ${
+                                    theme === 'dark' 
+                                        ? 'bg-black/90 backdrop-blur-xl shadow-[0_0_15px_rgba(204,43,94,0.3)] border border-[#cc2b5e]/20' 
+                                        : 'bg-white shadow-lg border border-gray-200'
                                 } rounded-lg p-4 z-50`}>
+                                    {/* Profile Header */}
                                     <div className="flex items-start mb-4">
-                                        <div className="w-10 h-10 rounded-full bg-[#cc2b5e] flex items-center justify-center text-white">
-                                            <RiUserLine className="text-xl" />
+                                        {/* Profile Picture/Avatar */}
+                                        <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0">
+                                            {user?.profilePicture ? (
+                                                <img 
+                                                    src={user.profilePicture} 
+                                                    alt={user.name} 
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            ) : (
+                                                <div className="w-full h-full bg-[#cc2b5e] flex items-center justify-center text-white">
+                                                    <RiUserLine className="text-2xl" />
+                                                </div>
+                                            )}
                                         </div>
-                                        <div className="ml-3 flex-1">
-                                            <h3 className="text-sm font-medium text-white">
+
+                                        {/* User Info */}
+                                        <div className="ml-3 flex-1 min-w-0"> {/* Added min-w-0 for text truncation */}
+                                            <h3 className={`text-sm font-medium ${
+                                                theme === 'dark' ? 'text-white' : 'text-gray-800'
+                                            } truncate`}>
                                                 {profileData?.name || user?.name || 'User'}
                                             </h3>
-                                            <p className="text-xs text-gray-400 truncate max-w-[180px]">
+                                            <p className={`text-xs ${
+                                                theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                                            } truncate`}>
                                                 {profileData?.email || user?.email || 'Loading...'}
+                                            </p>
+                                            {/* Add status or role if available */}
+                                            <p className={`text-xs mt-1 ${
+                                                theme === 'dark' ? 'text-gray-500' : 'text-gray-400'
+                                            }`}>
+                                                {user?.role || 'Member'}
                                             </p>
                                         </div>
                                     </div>
-                                    
+
                                     {/* Divider */}
-                                    <div className="border-t border-gray-700 my-3"></div>
-                                    
-                                    {/* Logout Button */}
-                                    <button 
-                                        onClick={handleLogout}
-                                        className={`w-full flex items-center space-x-2 p-2 rounded-lg ${
-                                            theme === 'dark' ? 'bg-white/5 hover:bg-white/10' : 'bg-gray-100 hover:bg-gray-200'
-                                        } transition-all text-[#cc2b5e]`}
-                                    >
-                                        <RiLogoutBoxLine className="text-lg" />
-                                        <span className="text-sm">Logout</span>
-                                    </button>
+                                    <div className={`border-t ${
+                                        theme === 'dark' ? 'border-gray-700' : 'border-gray-200'
+                                    } my-3`}></div>
+
+                                    {/* Profile Actions */}
+                                    <div className="space-y-2">
+                                        {/* Settings Option */}
+                                        <button 
+                                            onClick={() => {
+                                                onOpenSettings();
+                                                setShowProfileInfo(false);
+                                            }}
+                                            className={`w-full flex items-center space-x-2 p-2 rounded-lg ${
+                                                theme === 'dark' 
+                                                    ? 'hover:bg-white/10 text-white' 
+                                                    : 'hover:bg-gray-100 text-gray-700'
+                                            } transition-all`}
+                                        >
+                                            <RiSettings4Line className="text-lg" />
+                                            <span className="text-sm">Settings</span>
+                                        </button>
+
+                                        {/* Logout Button */}
+                                        <button 
+                                            onClick={handleLogout}
+                                            className={`w-full flex items-center space-x-2 p-2 rounded-lg ${
+                                                theme === 'dark' 
+                                                    ? 'bg-white/5 hover:bg-white/10' 
+                                                    : 'bg-gray-100 hover:bg-gray-200'
+                                            } transition-all text-[#cc2b5e]`}
+                                        >
+                                            <RiLogoutBoxLine className="text-lg" />
+                                            <span className="text-sm">Logout</span>
+                                        </button>
+                                    </div>
+
+                                    {/* Click Away Handler */}
+                                    <div 
+                                        className="fixed inset-0 z-[-1]" 
+                                        onClick={() => setShowProfileInfo(false)}
+                                    ></div>
                                 </div>
                             )}
                         </li>

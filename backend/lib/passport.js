@@ -3,6 +3,7 @@ const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const User = require('../model/userModel');
 const jwt = require("jsonwebtoken");
 
+// Add serialization (even without sessions, helps with passport flow)
 passport.serializeUser((userObj, done) => {
   done(null, userObj);
 });
@@ -10,16 +11,6 @@ passport.serializeUser((userObj, done) => {
 passport.deserializeUser((userObj, done) => {
   done(null, userObj);
 });
-
-const validateEnv = () => {
-  const required = ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'BACKEND_URL', 'JWT_SECRET'];
-  required.forEach(env => {
-    if (!process.env[env]) {
-      console.error(`Missing environment variable: ${env}`);
-      throw new Error(`Missing required environment variable: ${env}`);
-    }
-  });
-};
 
 passport.use(
   new GoogleStrategy(
@@ -32,7 +23,6 @@ passport.use(
     },
     async (req, accessToken, refreshToken, profile, done) => {
       try {
-        validateEnv();
         let user = await User.findOne({ googleId: profile.id });
 
         if (user) {
@@ -46,7 +36,7 @@ passport.use(
 
         if (user) {
           user.googleId = profile.id;
-          if (!user.profilePicture && profile.photos?.length > 0) {
+          if (!user.profilePicture && profile.photos && profile.photos.length > 0) {
             user.profilePicture = profile.photos[0].value;
           }
           await user.save();
@@ -60,7 +50,7 @@ passport.use(
           name: profile.displayName,
           email: profile.emails[0].value,
           googleId: profile.id,
-          profilePicture: profile.photos?.length > 0 ? profile.photos[0].value : null,
+          profilePicture: profile.photos && profile.photos.length > 0 ? profile.photos[0].value : null,
           isVerified: true
         });
 
@@ -70,7 +60,7 @@ passport.use(
         });
         done(null, { user: newUser, token });
       } catch (error) {
-        console.error('Error in Google Strategy:', error.stack);
+        console.error('Error in Google Strategy:', error);
         done(error);
       }
     }

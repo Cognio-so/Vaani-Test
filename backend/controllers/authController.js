@@ -2,7 +2,7 @@ const User = require("../model/userModel");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const passport = require('../lib/passport');
-const { generateToken } = require("../lib/utils");
+const generateToken = require('../lib/utils')
 
 const Signup = async (req, res) => {
   const { name, email, password } = req.body;
@@ -69,8 +69,8 @@ const Logout = async (req, res) => {
   try {
     res.cookie('jwt', '', {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production", // Secure only in production
-      sameSite: process.env.NODE_ENV === "production" ? 'none' : 'lax', // Cross-site in prod
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? 'none' : 'lax',
       path: '/',
       maxAge: 0
     });
@@ -81,12 +81,11 @@ const Logout = async (req, res) => {
   }
 };
 
-const checkAuth = (req, res) => {
+const checkAuth = async (req, res) => {
   try {
-    // Just return the user object that was populated by the protectRoutes middleware
     res.status(200).json(req.user);
   } catch (error) {
-    console.log("Error in checkAuth controller", error.message);
+    console.log("Error in check auth controller", error.message);
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
@@ -100,29 +99,55 @@ const getProfile = async (req, res) => {
   }
 };
 
-// Google auth callback handler
-const googleCallback = (req, res) => {
-  try {
-    if (!req.user || !req.user.token) {
-      throw new Error('Google authentication failed');
+
+const googleAuth = passport.authenticate('google', {
+  scope: ['profile', 'email'],
+  session: false
+});
+
+const googleCallback = async (req, res, next) => {
+  passport.authenticate('google', {
+    session: false,
+    failureRedirect: `${process.env.FRONTEND_URL}/login?error=auth_failed`
+  }, (err, userObj) => {
+    if (err || !userObj || !userObj.token) {
+      console.error('Google auth error:', err);
+      return res.redirect(`${process.env.FRONTEND_URL}/login?error=auth_failed`);
     }
 
-    // Set the JWT cookie
-    res.cookie('jwt', req.user.token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? 'none' : 'lax',
-      path: '/',
-      maxAge: 30 * 24 * 60 * 60 * 1000
-    });
+    try {
+      
+      // Use the same cookie settings as in generateToken
+      res.cookie('jwt', userObj.token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        path: '/',
+        maxAge: 30 * 24 * 60 * 60 * 1000
+      });
 
-    // Redirect with token as query param for fallback
-    const redirectUrl = `${process.env.FRONTEND_URL || 'https://vanni-test-frontend.vercel.app'}/chat?token=${req.user.token}`;
-    res.redirect(redirectUrl);
-  } catch (error) {
-    console.error('Google auth callback error:', error);
-    res.redirect(`${process.env.FRONTEND_URL || 'https://vanni-test-frontend.vercel.app'}/login?error=auth_failed`);
-  }
+      // Pass along user info in the URL for emergency fallback
+      const userInfo = encodeURIComponent(JSON.stringify({
+        id: userObj.user._id,
+        name: userObj.user.name,
+        email: userObj.user.email
+      }));
+      
+      const redirectUrl = `${process.env.FRONTEND_URL}/chat?auth=google&user=${userInfo}`;
+      res.redirect(redirectUrl);
+    } catch (error) {
+      console.error('Google auth callback error:', error);
+      res.redirect(`${process.env.FRONTEND_URL}/login?error=auth_failed`);
+    }
+  })(req, res, next);
 };
 
-module.exports = { Signup, Login, Logout, checkAuth, getProfile, googleCallback };
+module.exports = { 
+  Signup, 
+  Login, 
+  Logout, 
+  checkAuth, 
+  getProfile, 
+  googleAuth,
+  googleCallback 
+};

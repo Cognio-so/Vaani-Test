@@ -20,9 +20,9 @@ export default function LoginForm() {
   // Clear any previous auth data when the login page is visited
   useEffect(() => {
     // If we're coming to login page directly (not from a redirect), clear session data
-    // if (!document.referrer.includes(window.location.host)) {
-    //   sessionStorage.removeItem('user');
-    // }
+    if (!document.referrer.includes(window.location.host)) {
+      sessionStorage.removeItem('user');
+    }
   }, []);
 
   const handleChange = (e) => {
