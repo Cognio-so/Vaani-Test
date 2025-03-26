@@ -26,7 +26,7 @@ requiredEnvVars.forEach((varName) => {
 app.use(express.json({ limit: "10mb" }));
 app.use(cookieParser());
 app.use(cors({
-  origin: process.env.FRONTEND_URL,
+  origin: process.env.FRONTEND_URL, // Must match frontend exactly
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "Cookie", "Accept"],
@@ -46,6 +46,12 @@ app.use("/auth", authRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/email", emailRoutes);
+
+// Debug middleware to log all requests
+app.use((req, res, next) => {
+  console.log(`Request: ${req.method} ${req.url}, Cookies:`, req.cookies);
+  next();
+});
 
 // Error handling middleware
 app.use((err, req, res, next) => {

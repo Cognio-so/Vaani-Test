@@ -26,6 +26,7 @@ export const AuthProvider = ({ children }) => {
     try {
       console.log(`Fetching ${endpoint} with credentials`);
       const response = await fetch(`${API_URL}${endpoint}`, defaultOptions);
+      console.log(`Response from ${endpoint}: Status ${response.status}`);
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
         console.error(`Fetch error at ${endpoint}: ${response.status}`, errorData);

@@ -136,13 +136,12 @@ const generateToken = (userId, res) => {
       path: '/',
       maxAge: 30 * 24 * 60 * 60 * 1000
     });
-    console.log("Token generated and cookie set for userId:", userId);
+    console.log("Token generated and cookie set for userId:", userId, "Token:", token);
   } catch (error) {
     console.error("Error in generateToken:", error.stack);
     throw error;
   }
 };
-
 const googleAuth = passport.authenticate('google', {
   scope: ['profile', 'email'],
   session: false
