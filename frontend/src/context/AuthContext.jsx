@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 const AuthContext = createContext();
 
-const API_URL = 'https://smith-backend-psi.vercel.app';
+const API_URL = 'https://vanni-test-backend.vercel.app';
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
