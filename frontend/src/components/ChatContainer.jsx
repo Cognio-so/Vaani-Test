@@ -30,7 +30,7 @@ const ChatContainer = () => {
   const [isGeneratingMedia, setIsGeneratingMedia] = useState(false)
   const [generatingMediaType, setGeneratingMediaType] = useState(null)
   const [mediaType, setMediaType] = useState(null)
-  const { user } = useAuth()
+  const { user, api } = useAuth()
   const [chatTitle, setChatTitle] = useState("New Chat")
   const [conversations, setConversations] = useState([])
   const { theme } = useContext(ThemeContext)
@@ -182,9 +182,7 @@ const ChatContainer = () => {
     if (!user) return;
     
     try {
-      const response = await axios.get(`${backend_url}/api/chat/history/all`, {
-        withCredentials: true
-      });
+      const response = await api.get('/api/chat/history/all');
       
       if (response.data.success) {
         const allChats = [
@@ -247,21 +245,17 @@ const ChatContainer = () => {
       
       if (chatId && !chatId.startsWith('temp_') && !chatId.startsWith('new_')) {
         // Use the update endpoint for existing chats
-        response = await axios.put(`${backend_url}/api/chat/${chatId}/update`, {
+        response = await api.put(`/api/chat/${chatId}/update`, {
           title,
           messages: JSON.parse(JSON.stringify(messagesToSave)),
           preserveTimestamp: isJustLoading // Preserve timestamp when just loading
-        }, {
-          withCredentials: true
         });
       } else {
         // Use save endpoint for new chats
-        response = await axios.post(`${backend_url}/api/chat/save`, {
+        response = await api.post('/api/chat/save', {
           chatId,
           title,
           messages: JSON.parse(JSON.stringify(messagesToSave)),
-        }, {
-          withCredentials: true
         });
       }
       
@@ -573,9 +567,7 @@ const ChatContainer = () => {
   const loadChat = async (chatId) => {
     try {
       setIsLoadingChat(true);
-      const response = await axios.get(`${backend_url}/api/chat/${chatId}`, {
-        withCredentials: true
-      });
+      const response = await api.get(`/api/chat/${chatId}`);
       
       if (response.data.success) {
         const chatData = response.data.chat;
@@ -1067,11 +1059,9 @@ const ChatContainer = () => {
     if (!user || !threadId || threadId.startsWith('temp_') || isLoadingChat) return;
     
     try {
-      const response = await axios.put(`${backend_url}/api/chat/${threadId}/update`, {
+      const response = await api.put(`/api/chat/${threadId}/update`, {
         title: newTitle,
         messages: messages
-      }, {
-        withCredentials: true
       });
       
       if (response.data.success) {

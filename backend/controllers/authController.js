@@ -22,22 +22,34 @@ const Signup = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, salt);
 
     const newUser = new User({ name, email, password: hashedPassword });
+    await newUser.save();
 
-    if (newUser) {
-      generateToken(newUser._id, res);
-      await newUser.save();
+    // Generate token
+    const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET, {
+      expiresIn: '30d'
+    });
+    
+    // Set cookie
+    res.cookie('jwt', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      path: '/',
+      maxAge: 30 * 24 * 60 * 60 * 1000
+    });
+    
+    // Also send token in header and body
+    res.set('x-auth-token', token);
 
-      res.status(201).json({
-        _id: newUser._id,
-        name: newUser.name,
-        email: newUser.email,
-      });
-    } else {
-      res.status(400).json({ message: "Invalid user data" });
-    }
+    res.status(201).json({
+      _id: newUser._id,
+      name: newUser.name,
+      email: newUser.email,
+      token: token // Include token in response body
+    });
   } catch (error) {
-    console.log("Error in signup controller", error.message);
-    res.status(500).json({ message: "Internal Server Error" });
+    console.error("Error in signup controller:", error);
+    res.status(500).json({ message: "Internal Server Error", error: error.message });
   }
 };
 
@@ -51,15 +63,29 @@ const Login = async (req, res) => {
     const isPasswordCorrect = await bcrypt.compare(password, user.password);
     if (!isPasswordCorrect) return res.status(400).json({ message: "Invalid password" });
 
-    // Generate token and set cookie
-    const token = generateToken(user._id, res);
-    console.log("Login successful for:", email, "Token:", token.substring(0, 10) + "...");
-
+    // Generate token
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+      expiresIn: '30d'
+    });
+    
+    // Set cookie (may or may not work across domains)
+    res.cookie('jwt', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      path: '/',
+      maxAge: 30 * 24 * 60 * 60 * 1000
+    });
+    
+    // Also send token in header and body (guaranteed to work)
+    res.set('x-auth-token', token);
+    
     // Return user data
     res.status(200).json({
       _id: user._id,
       name: user.name,
       email: user.email,
+      token: token // Include token in response body
     });
   } catch (error) {
     console.error("Error in login controller:", error);
@@ -149,8 +175,7 @@ const googleCallback = async (req, res, next) => {
     }
 
     try {
-      
-      // Use the same cookie settings as in generateToken
+      // Set cookie
       res.cookie('jwt', userObj.token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
@@ -159,14 +184,14 @@ const googleCallback = async (req, res, next) => {
         maxAge: 30 * 24 * 60 * 60 * 1000
       });
 
-      // Pass along user info in the URL for emergency fallback
+      // Pass along user info AND token in the URL
       const userInfo = encodeURIComponent(JSON.stringify({
-        id: userObj.user._id,
+        _id: userObj.user._id,
         name: userObj.user.name,
         email: userObj.user.email
       }));
       
-      const redirectUrl = `${process.env.FRONTEND_URL || 'https://vanni-test-frontend.vercel.app'}/chat?auth=google&user=${userInfo}`;
+      const redirectUrl = `${process.env.FRONTEND_URL || 'https://vanni-test-frontend.vercel.app'}/chat?auth=google&user=${userInfo}&token=${userObj.token}`;
       res.redirect(redirectUrl);
     } catch (error) {
       console.error('Google auth callback error:', error);
