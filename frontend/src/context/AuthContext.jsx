@@ -3,11 +3,15 @@ import { useNavigate } from "react-router-dom";
 
 const AuthContext = createContext();
 
-const API_URL = 'https://vanni-test-backend.vercel.app';
+const API_URL = import.meta.env.REACT_APP_API_URL || 'https://vanni-test-backend.vercel.app';
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  // Initialize user from sessionStorage if available
+  const [user, setUser] = useState(() => {
+    const savedUser = sessionStorage.getItem('user');
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
+  const [loading, setLoading] = useState(!sessionStorage.getItem('user'));
   const navigate = useNavigate();
 
   const fetchWithCredentials = async (endpoint, options = {}) => {
@@ -22,7 +26,14 @@ export const AuthProvider = ({ children }) => {
 
     try {
       const response = await fetch(`${API_URL}${endpoint}`, defaultOptions);
+      
+      
       if (!response.ok) {
+        const data = await response.text();
+        console.error('Response error:', response.status, data);
+        if (response.status === 401) {
+          setUser(null);
+        }
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       return response;
@@ -33,44 +44,93 @@ export const AuthProvider = ({ children }) => {
   };
 
   useEffect(() => {
+    let isMounted = true;
+    let ignoreRedirects = false;
+    
     const verifyUser = async () => {
       try {
-        // Check for token in URL (Google redirect fallback)
+        // Check if we're returning from Google auth
         const urlParams = new URLSearchParams(window.location.search);
-        const token = urlParams.get('token');
+        const googleAuth = urlParams.get('auth') === 'google';
+        const googleAuthInProgress = sessionStorage.getItem('googleAuthInProgress');
+        
+        if (googleAuth) {
+          ignoreRedirects = true;
+          // Clear the Google auth in progress flag
+          sessionStorage.removeItem('googleAuthInProgress');
+          
+          // Immediately clear URL parameters to prevent refresh issues
+          window.history.replaceState({}, document.title, window.location.pathname);
+          
+          // If we have URL user data, use it immediately
+          const urlUser = urlParams.get('user');
+          if (urlUser) {
+            try {
+              const userData = JSON.parse(decodeURIComponent(urlUser));
+              if (isMounted) {
+                setUser(userData);
+                setLoading(false);
+                sessionStorage.setItem('user', JSON.stringify(userData));
+              }
+              return; // Skip further verification
+            } catch (e) {
+              console.error("Error parsing user data from URL", e);
+            }
+          }
+        }
+        
         const error = urlParams.get('error');
-
         if (error === 'auth_failed') {
           console.error('Google authentication failed');
-          setUser(null);
-          setLoading(false);
+          if (isMounted) setUser(null);
+          if (isMounted) setLoading(false);
+          navigate('/login');
           return;
         }
 
-        if (token) {
-          // Set cookie manually if received via URL
-          document.cookie = `jwt=${token}; path=/; max-age=${30 * 24 * 60 * 60}; ${
-            window.location.protocol === "https:" ? 'secure; samesite=none' : 'samesite=lax'
-          }`;
-          // Clear URL params to prevent reuse
-          window.history.replaceState({}, document.title, window.location.pathname);
-        }
-
-        // Add debug logging to check cookies
-
         const response = await fetchWithCredentials('/auth/check-auth');
         const data = await response.json();
-        setUser(data);
+        
+        
+        if (isMounted) {
+          setUser(data);
+          setLoading(false);
+          
+          // IMPORTANT: Store user in sessionStorage as a backup
+          sessionStorage.setItem('user', JSON.stringify(data));
+        }
+        
+        // Only handle redirects if not ignoring them
+        if (!ignoreRedirects && !googleAuth) {
+          const intendedPath = localStorage.getItem('intendedPath');
+          if (intendedPath) {
+            localStorage.removeItem('intendedPath');
+            navigate(intendedPath);
+          }
+        }
       } catch (error) {
         console.error("Auth verification failed:", error);
-        setUser(null);
-      } finally {
-        setLoading(false);
+        if (isMounted) {
+          setUser(null);
+          setLoading(false);
+          // Clear backup user data
+          sessionStorage.removeItem('user');
+        }
+        
+        // Only redirect if not ignoring redirects and not on non-auth paths
+        const nonAuthPaths = ['/login', '/signup', '/'];
+        if (!ignoreRedirects && !nonAuthPaths.includes(window.location.pathname)) {
+          navigate('/login');
+        }
       }
     };
 
     verifyUser();
-  }, []);
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [navigate]);
 
   const checkAuthStatus = async () => {
     try {
@@ -128,6 +188,10 @@ export const AuthProvider = ({ children }) => {
   };
   
   const signInWithGoogle = () => {
+    // Store the current path before redirecting to Google
+    localStorage.setItem('intendedPath', window.location.pathname === '/login' ? '/chat' : window.location.pathname);
+    // Set a flag to indicate we're starting Google auth flow
+    sessionStorage.setItem('googleAuthInProgress', 'true');
     window.location.href = `${API_URL}/auth/google`;
   };
 

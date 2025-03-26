@@ -31,14 +31,14 @@ app.use(cookieParser());
 app.use(
   cors({
     origin: [
-      "https://vanni-test-frontend.vercel.app",
+      "https://vanni-test.vercel.app",
       "http://localhost:5173",
       "http://localhost:5174",
     ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "Cookie", "Accept"],
-    exposedHeaders: ["set-cookie"],
+    exposedHeaders: ["Set-Cookie"],
   })
 );
 
@@ -72,24 +72,9 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Start server
-const startServer = async () => {
-  try {
-    await connectDB();
-    if (process.env.NODE_ENV !== "production") {
-      const PORT = process.env.PORT || 5001;
-      app.listen(PORT, () => {
-        console.log(`✨ Server running locally on port ${PORT}`);
-      });
-    } else {
-      console.log("✨ Server deployed to Vercel");
-    }
-  } catch (error) {
-    console.error("Failed to start server:", error);
-    process.exit(1);
-  }
-};
+const PORT = process.env.PORT || 5000;
 
-startServer();
-
-module.exports = app; // Export for Vercel
+app.listen(PORT, () => {
+  console.log(`✨ Server running on port ${PORT}`);
+  connectDB();
+});

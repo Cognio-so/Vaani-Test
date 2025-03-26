@@ -1,4 +1,4 @@
-import { useState, useContext } from "react"
+import { useState, useContext, useEffect } from "react"
 import { useAuth } from "../context/AuthContext"
 import { Link } from "react-router-dom"
 import { HiMail } from "react-icons/hi"
@@ -16,6 +16,14 @@ export default function LoginForm() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const { theme } = useContext(ThemeContext)
+
+  // Clear any previous auth data when the login page is visited
+  useEffect(() => {
+    // If we're coming to login page directly (not from a redirect), clear session data
+    if (!document.referrer.includes(window.location.host)) {
+      sessionStorage.removeItem('user');
+    }
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target

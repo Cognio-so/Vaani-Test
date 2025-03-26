@@ -13,20 +13,50 @@ export const ThemeContext = createContext();
 
 // Protected route component
 const ProtectedRoute = ({ children }) => {
-  const { user, loading } = useAuth()
+  const { user, loading } = useAuth();
+  const [localLoading, setLocalLoading] = useState(true);
+  const [hasUser, setHasUser] = useState(false);
   
-  if (loading) {
+  // Prevent navigation loops by checking URL parameters
+  const [preventRedirect, setPreventRedirect] = useState(false);
+  
+  useEffect(() => {
+    // Check if we're returning from Google auth
+    const urlParams = new URLSearchParams(window.location.search);
+    const googleAuth = urlParams.get('auth') === 'google';
+    
+    if (googleAuth) {
+      setPreventRedirect(true);
+      // Remove the parameters
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+    
+    // Double-check user from sessionStorage as a safeguard
+    const savedUser = sessionStorage.getItem('user');
+    
+    if (user) {
+      setHasUser(true);
+      setLocalLoading(false);
+    } else if (savedUser) {
+      setHasUser(true);
+      setLocalLoading(false);
+    } else {
+      setHasUser(false);
+      setLocalLoading(false);
+    }
+  }, [user]);
+  
+  if (loading || localLoading) {
     return <LoadingSpinner /> 
   }
   
-  if (!user) {
+  
+  if (!hasUser && !preventRedirect) {
     return <Navigate to="/login" />
   }
   
-  return children
+  return children;
 }
-
-
 
 function AppRoutes() {
   return (
@@ -68,6 +98,8 @@ function App() {
       document.body.classList.remove('light-theme');
     }
   }, [theme]);
+
+ 
 
   return (
     <ThemeContext.Provider value={{ theme, setTheme }}>

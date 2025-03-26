@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion'
-import { HiSparkles } from 'react-icons/hi'
-import { FaUser, FaDownload } from 'react-icons/fa'
+import { HiSparkles, HiPencil } from 'react-icons/hi'
+import { FaUser, FaDownload, FaRegCopy } from 'react-icons/fa'
+import { TbCopyCheckFilled } from 'react-icons/tb'
 import MessageInput from './MessageInput'
 import Sidebar from './Sidebar'
 import ChatHistory from './ChatHistory'
@@ -27,19 +28,29 @@ const ChatContainer = () => {
   const messagesEndRef = useRef(null)
   const [agentStatus, setAgentStatus] = useState("")
   const [isGeneratingMedia, setIsGeneratingMedia] = useState(false)
-  const [generatingMediaType, setGeneratingMediaType] = useState(null) // 'image' or 'audio'
-  const [mediaType, setMediaType] = useState(null) // 'image' or 'music'
+  const [generatingMediaType, setGeneratingMediaType] = useState(null)
+  const [mediaType, setMediaType] = useState(null)
   const { user } = useAuth()
   const [chatTitle, setChatTitle] = useState("New Chat")
   const [conversations, setConversations] = useState([])
   const { theme } = useContext(ThemeContext)
-  const [isLoadingChat, setIsLoadingChat] = useState(false) // New state to prevent saving when loading
+  const [isLoadingChat, setIsLoadingChat] = useState(false)
   const [isEditingTitle, setIsEditingTitle] = useState(false)
   const [editedTitle, setEditedTitle] = useState("")
   
   // Add these missing useRef declarations
   const chatIdRef = useRef(`temp_${Date.now()}`)
   const saveInProgress = useRef(false)
+
+  // Add this state for the selected model
+  const [model, setModel] = useState("gemini-1.5-flash")
+
+  // Add these state variables
+  const [useAgent, setUseAgent] = useState(false);
+  const [deepResearch, setDeepResearch] = useState(false);
+
+  // Add a ref to store the original lastUpdated timestamp
+  const chatLastUpdatedRef = useRef(null);
 
   // Scroll to bottom of messages
   const scrollToBottom = () => {
@@ -226,6 +237,11 @@ const ChatContainer = () => {
       const messagesToSave = currentMessages.filter(msg => !msg.isTemporary);
       
       
+      // Check if this is just a chat load or an actual update with new messages
+      const isJustLoading = chatLastUpdatedRef.current && 
+                           !chatId.startsWith('temp_') && 
+                           !chatId.startsWith('new_');
+      
       // Choose the right endpoint - update for existing chats, save for new ones
       let response;
       
@@ -234,6 +250,7 @@ const ChatContainer = () => {
         response = await axios.put(`${backend_url}/api/chat/${chatId}/update`, {
           title,
           messages: JSON.parse(JSON.stringify(messagesToSave)),
+          preserveTimestamp: isJustLoading // Preserve timestamp when just loading
         }, {
           withCredentials: true
         });
@@ -259,6 +276,9 @@ const ChatContainer = () => {
         if (title === "New Chat" || title.endsWith("...")) {
           setChatTitle(response.data.chat.title);
         }
+        
+        // Store the last updated timestamp from response
+        chatLastUpdatedRef.current = response.data.chat.lastUpdated;
       }
     } catch (error) {
       console.error("Error saving chat:", error);
@@ -334,11 +354,7 @@ const ChatContainer = () => {
          messageText.includes('audio') ||
          messageText.includes('song'));
       
-      console.log("Media request detection in streaming function:", { 
-        isMediaRequest, 
-        isGeneratingMedia,
-        messageContent: message.content
-      });
+      
       
       // Don't add temporary message for media requests to avoid conflicts
       if (!isMediaRequest && !isGeneratingMedia) {
@@ -397,33 +413,36 @@ const ChatContainer = () => {
           const lines = chunk.split('\n').filter(line => line.trim());
           
           for (const line of lines) {
+            if (!line.trim()) continue;
+            
             try {
               const data = JSON.parse(line);
               
-              if (data.type === 'status') {
-                if (!isGeneratingMedia) {
-                  setAgentStatus(data.status);
-                  if (!isMediaRequest) {
-                    setMessages(prev => prev.map(msg => 
-                      msg.isTemporary
-                        ? { ...msg, content: `**${data.status}**` }
-                        : msg
-                    ));
-                  }
+              if (data.type === "status") {
+                if (data.status === "typing") {
+                  setLoadingState({ type: "typing" });
+                } 
+                else if (data.status === "generating_image") {
+                  setLoadingState({ type: "image" });
                 }
-              } 
-              else if (data.type === 'token') {
-                fullResponse = data.token;
+                else if (data.status === "generating_music") {
+                  setLoadingState({ type: "music" });
+                }
+              }
+              else if (data.type === "token") {
                 if (!isMediaRequest && !isGeneratingMedia) {
                   setMessages(prev => prev.map(msg => 
                     msg.isTemporary
-                      ? { ...msg, content: fullResponse }
+                      ? { ...msg, content: data.token }
                       : msg
                   ));
+                } else {
+                  fullResponse = data.token;
                 }
               }
-              else if (data.type === 'result') {
+              else if (data.type === "result") {
                 const content = data.message?.content || '';
+                
                 const containsImageUrl = 
                   content.includes('.jpg') || 
                   content.includes('.jpeg') || 
@@ -439,23 +458,17 @@ const ChatContainer = () => {
                   content.includes('musicfy.lol') ||
                   content.includes('audio-url');
                 
-                console.log("Media detection in result:", {
-                  containsImageUrl,
-                  containsMusicUrl,
-                  content: content.substring(0, 100) + "...",
-                });
+                const isMediaResponse = containsImageUrl || containsMusicUrl;
                 
-                // Clear all temporary states
+                
+                
                 setIsLoading(false);
                 setAgentStatus("");
                 setIsGeneratingMedia(false);
                 setGeneratingMediaType(null);
                 
-                // Process response correctly based on content
-                // For media requests, make sure we filter out any temporary messages
                 if (isMediaRequest) {
                   setMessages(prev => {
-                    // Remove any processing or temporary messages first
                     const filteredMessages = prev.filter(msg => 
                       !(msg.isTemporary || 
                         (msg.role === 'assistant' && 
@@ -463,33 +476,25 @@ const ChatContainer = () => {
                           msg.content.includes('Generating'))))
                     );
                     
-                    // Add the actual response
                     const newMessages = [...filteredMessages, data.message];
                     saveChat(newMessages);
                     return newMessages;
                   });
                 } else {
-                  // For normal messages
                   setMessages(prev => {
                     const newMessages = prev.filter(msg => !msg.isTemporary).concat([data.message]);
                     saveChat(newMessages);
                     return newMessages;
                   });
                 }
-                
-                if (data.thread_id) {
-                  setThreadId(data.thread_id);
-                  chatIdRef.current = data.thread_id;
-                }
               }
-            } catch (parseError) {
-              console.error("Error parsing stream data:", parseError, "Line:", line);
+            } catch (jsonError) {
+              console.error("Error parsing stream data:", jsonError, "Line:", line);
             }
           }
         }
       } catch (error) {
         console.error("Error with streaming chat:", error);
-        // Remove temporary message on error
         setMessages(prev => prev.filter(msg => !msg.isTemporary));
         setIsGeneratingMedia(false);
         setGeneratingMediaType(null);
@@ -499,6 +504,8 @@ const ChatContainer = () => {
   };
 
   const handleSendMessage = (message, options = {}) => {
+    chatLastUpdatedRef.current = null;
+    
     const userMessage = { ...message };
     
     if (options.file_url) {
@@ -519,11 +526,9 @@ const ChatContainer = () => {
 
     const messageText = userMessage.content.toLowerCase();
     
-    // Reset media states at the beginning of a new message
     setIsGeneratingMedia(false);
     setGeneratingMediaType(null);
     
-    // More precise detection of audio/music requests
     const songTerms = ['song', 'music', 'audio', 'tune', 'melody', 'compose'];
     const audioVerbs = ['generate', 'create', 'make', 'compose', 'play'];
     
@@ -544,21 +549,22 @@ const ChatContainer = () => {
        messageText.includes('make'))
     );
 
-    // Set the appropriate media state based on detection
     if (isAudioRequest) {
       setIsGeneratingMedia(true);
       setGeneratingMediaType('audio');
-      setMediaType('music'); // Make sure to set this too
+      setMediaType('music');
     } else if (isImageRequest) {
       setIsGeneratingMedia(true);
       setGeneratingMediaType('image');
-      setMediaType('image'); // Make sure to set this too
+      setMediaType('image');
     }
 
     setIsLoading(true);
     
     if (options.deep_research) {
       handleReactAgentStreamingRequest(userMessage, options);
+    } else if (options.use_agent) {
+      handleChatStreamingRequest(userMessage, options);
     } else {
       handleChatStreamingRequest(userMessage, options);
     }
@@ -566,22 +572,28 @@ const ChatContainer = () => {
 
   const loadChat = async (chatId) => {
     try {
-      setIsLoadingChat(true); // Set flag to prevent saving
+      setIsLoadingChat(true);
       const response = await axios.get(`${backend_url}/api/chat/${chatId}`, {
         withCredentials: true
       });
       
       if (response.data.success) {
-        setMessages(response.data.chat.messages);
-        setChatTitle(response.data.chat.title);
-        setThreadId(response.data.chat.chatId);
-        chatIdRef.current = response.data.chat.chatId; // Update ref to permanent ID
+        const chatData = response.data.chat;
+        setMessages(chatData.messages);
+        setChatTitle(chatData.title);
+        setThreadId(chatData.chatId);
+        chatIdRef.current = chatData.chatId;
+        
+        if (chatData.lastUpdated) {
+          chatLastUpdatedRef.current = chatData.lastUpdated;
+        }
+        
         setIsHistoryOpen(false);
       }
     } catch (error) {
       console.error("Error loading chat:", error);
     } finally {
-      setIsLoadingChat(false); // Reset flag after loading
+      setIsLoadingChat(false);
     }
   };
 
@@ -781,29 +793,23 @@ const ChatContainer = () => {
     const { text, imageUrls, musicUrls } = extractMediaUrls(content);
     
     const handleImageDownload = (url) => {
-      // Create an xhr request to get the image as a blob
       const xhr = new XMLHttpRequest();
       xhr.open('GET', url, true);
       xhr.responseType = 'blob';
       xhr.onload = function() {
         if (this.status === 200) {
-          // Create a blob from the image data
           const blob = new Blob([this.response], { type: 'image/jpeg' });
           
-          // Create a URL for the blob
           const blobUrl = URL.createObjectURL(blob);
           
-          // Create an anchor element and set download attribute
           const a = document.createElement('a');
           a.href = blobUrl;
           a.download = 'image-' + Date.now() + '.jpg';
           
-          // Append, click, and remove the anchor
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
           
-          // Release the blob URL
           setTimeout(() => {
             URL.revokeObjectURL(blobUrl);
           }, 100);
@@ -821,30 +827,62 @@ const ChatContainer = () => {
               components={{
                 code({ node, inline, className, children, ...props }) {
                   const match = /language-(\w+)/.exec(className || '');
+                  const codeString = String(children).replace(/\n$/, '');
+                  const [copied, setCopied] = useState(false);
+                  
+                  const copyToClipboard = (text) => {
+                    navigator.clipboard.writeText(text)
+                      .then(() => {
+                        setCopied(true);
+                        setTimeout(() => setCopied(false), 2000);
+                      })
+                      .catch(err => {
+                        console.error('Failed to copy code: ', err);
+                      });
+                  };
+
                   return !inline && match ? (
-                    <SyntaxHighlighter
-                      style={atomDark}
-                      language={match[1]}
-                      PreTag="div"
-                      customStyle={{
-                        maxWidth: '100%', 
-                        fontSize: '0.75em',
-                        borderRadius: '0.375rem',
-                        marginTop: '0.5rem',
-                        marginBottom: '0.5rem',
-                      }}
-                      codeTagProps={{
-                        style: {
-                          fontSize: 'inherit',
-                          lineHeight: 1.5
-                        }
-                      }}
-                      wrapLines={true}
-                      wrapLongLines={true}
-                      {...props}
-                    >
-                      {String(children).replace(/\n$/, '')}
-                    </SyntaxHighlighter>
+                    <div className="relative group">
+                      <div className="sticky top-2 right-2 float-right flex space-x-2 z-10">
+                        <button 
+                          onClick={() => copyToClipboard(codeString)}
+                          className="bg-[#cc2b5e]/80 hover:bg-[#cc2b5e] text-white rounded p-1 text-xs transition-colors"
+                          title={copied ? "Copied!" : "Copy code"}
+                        >
+                          {copied ? <TbCopyCheckFilled className="h-4 w-4" /> : <FaRegCopy className="h-4 w-4" />}
+                        </button>
+                        <button 
+                          onClick={() => copyToClipboard(codeString)}
+                          className="bg-[#cc2b5e]/80 hover:bg-[#cc2b5e] text-white rounded p-1 text-xs transition-colors"
+                          title="Edit code"
+                        >
+                          <HiPencil className="h-4 w-4" />
+                        </button>
+                      </div>
+                      <SyntaxHighlighter
+                        style={atomDark}
+                        language={match[1]}
+                        PreTag="div"
+                        customStyle={{
+                          maxWidth: '100%', 
+                          fontSize: '0.75em',
+                          borderRadius: '0.375rem',
+                          marginTop: '0.5rem',
+                          marginBottom: '0.5rem',
+                        }}
+                        codeTagProps={{
+                          style: {
+                            fontSize: 'inherit',
+                            lineHeight: 1.5
+                          }
+                        }}
+                        wrapLines={true}
+                        wrapLongLines={true}
+                        {...props}
+                      >
+                        {codeString}
+                      </SyntaxHighlighter>
+                    </div>
                   ) : (
                     <code className={className} {...props}>
                       {children}
@@ -891,7 +929,7 @@ const ChatContainer = () => {
                   className="w-full max-w-full object-contain rounded-lg" 
                   onError={(e) => {
                     e.target.onerror = null;
-                    e.target.src = 'https://via.placeholder.com/300x200?text=Image+Failed+to+Load';
+                    e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200' viewBox='0 0 300 200'%3E%3Crect width='300' height='200' fill='%23f0f0f0'/%3E%3Ctext x='50%25' y='50%25' font-family='Arial' font-size='14' text-anchor='middle' dominant-baseline='middle' fill='%23999999'%3EImage Failed to Load%3C/text%3E%3C/svg%3E";
                   }}
                 />
                 <button
@@ -1038,11 +1076,20 @@ const ChatContainer = () => {
       
       if (response.data.success) {
         setChatTitle(newTitle);
-        fetchChatHistory(); // Refresh the list
+        fetchChatHistory();
       }
     } catch (error) {
       console.error("Error updating chat title:", error);
     }
+  };
+
+  const handleModelChange = (newModel) => {
+    setModel(newModel);
+  };
+
+  const handleInputOptionsChange = (options) => {
+    if (options.use_agent !== undefined) setUseAgent(options.use_agent);
+    if (options.deep_research !== undefined) setDeepResearch(options.deep_research);
   };
 
   return (
@@ -1215,6 +1262,39 @@ const ChatContainer = () => {
                     cursor: pointer;
                     border: none;
                   }
+                  
+                  .loading-dots {
+                    display: inline-flex;
+                  }
+                  
+                  .loading-dots .dot {
+                    animation: loadingDot 1.4s infinite;
+                    animation-fill-mode: both;
+                    font-size: 1.5em;
+                    line-height: 0.5;
+                    margin-left: 2px;
+                    opacity: 0;
+                  }
+                  
+                  .loading-dots .dot:nth-child(1) {
+                    animation-delay: 0.2s;
+                  }
+                  
+                  .loading-dots .dot:nth-child(2) {
+                    animation-delay: 0.4s;
+                  }
+                  
+                  .loading-dots .dot:nth-child(3) {
+                    animation-delay: 0.6s;
+                  }
+                  
+                  @keyframes loadingDot {
+                    0% { opacity: 0; }
+                    25% { opacity: 0; }
+                    50% { opacity: 1; }
+                    75% { opacity: 1; }
+                    100% { opacity: 0; }
+                  }
                 `}</style>
                 
                 <div className="w-full max-w-[95%] xs:max-w-[90%] sm:max-w-2xl md:max-w-3xl lg:max-w-4xl mx-auto">
@@ -1259,19 +1339,14 @@ const ChatContainer = () => {
                   
                   {isGeneratingMedia && <MediaGenerationIndicator />}
                   
-                  {isLoading && !isGeneratingMedia && !messages.some(msg => msg.isTemporary) && (
+                  {isLoading && !isGeneratingMedia && !messages.some(msg => msg.isTemporary) && !mediaType && (
                     <div className="max-w-[95%] mr-auto mb-4">
                       <div className={`${theme === 'dark' ? 'bg-white/10 text-white' : 'bg-gray-100 text-gray-800'} rounded-xl p-2 sm:p-3`}>
                         <div className="flex items-center">
-                          <div className="flex space-x-2 items-center">
-                          {agentStatus ? (
-                            <span className="ml-2 text-sm font-medium">{agentStatus}</span>
-                          ) : (
-                            <span className={`ml-2 text-sm ${theme === 'dark' ? 'text-white/80' : 'text-gray-600'}`}>Thinking</span>
-                          )}
-                          <div className="w-2 h-2 bg-[#cc2b5e] rounded-full animate-bounce"></div>
-                          <div className="w-2 h-2 bg-[#cc2b5e] rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-                          <div className="w-2 h-2 bg-[#cc2b5e] rounded-full animate-bounce" style={{animationDelay: '0.4s'}}></div>
+                          <div className="flex items-center space-x-2">
+                            <div className="w-1 h-1 bg-[#cc2b5e] rounded-full animate-pulse"></div>
+                            <div className="w-1 h-1 bg-[#cc2b5e] rounded-full animate-pulse" style={{animationDelay: '0.3s'}}></div>
+                            <div className="w-1 h-1 bg-[#cc2b5e] rounded-full animate-pulse" style={{animationDelay: '0.6s'}}></div>
                           </div>
                         </div>
                       </div>
@@ -1286,6 +1361,9 @@ const ChatContainer = () => {
                   isLoading={isLoading}
                   setIsLoading={setIsLoading}
                   onMediaRequested={handleMediaRequested}
+                  onModelChange={handleModelChange}
+                  onOptionsChange={handleInputOptionsChange}
+                  selectedModel={model}
                 />
               </div>
             </div>
@@ -1304,7 +1382,7 @@ const ChatContainer = () => {
                         theme === 'dark' 
                           ? 'bg-white/[0.05] backdrop-blur-xl border border-white/20 hover:bg-white/[0.08] shadow-[0_0_20px_rgba(204,43,94,0.3)] hover:shadow-[0_0_20px_rgba(204,43,94,0.5)]' 
                           : 'bg-gray-100 border border-gray-200 hover:bg-gray-200 shadow-md hover:shadow-lg'
-                      } rounded-xl p-4 cursor-pointer transition-all duration-300`}
+                      } rounded-xl p-4 cursor-pointer transition-all duration-100`}
                       whileHover={{ 
                         scale: 1.03,
                         transition: { duration: 0.2 }
@@ -1332,6 +1410,9 @@ const ChatContainer = () => {
                   isLoading={isLoading}
                   setIsLoading={setIsLoading}
                   onMediaRequested={handleMediaRequested}
+                  onModelChange={handleModelChange}
+                  onOptionsChange={handleInputOptionsChange}
+                  selectedModel={model}
                 />
               </div>
             </div>

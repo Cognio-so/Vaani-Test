@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState, useContext } from 'react'
 import { FaLightbulb } from 'react-icons/fa'
 import { CiGlobe } from 'react-icons/ci'
-import { RiSparkling2Fill, RiVoiceprintFill } from 'react-icons/ri'
+import { RiSparkling2Fill } from 'react-icons/ri'
 import { MdAttachFile } from 'react-icons/md'
 import { SiGoogle, SiOpenai, SiMeta, SiClaude } from 'react-icons/si'
 import { IoClose } from 'react-icons/io5'
@@ -9,13 +9,13 @@ import axios from 'axios'
 import { ThemeContext } from '../App'
 
 // Constants
-const API_URL= import.meta.env.REACT_APP_API_URL || 'https://python-test-algohype.replit.app'
+    const API_URL = import.meta.env.REACT_APP_API_URL || 'https://python-test-algohype.replit.app'
 
-const MessageInput = ({ onSendMessage, isLoading, setIsLoading }) => {
+const MessageInput = ({ onSendMessage, isLoading, setIsLoading, onMediaRequested, onModelChange, onOptionsChange, selectedModel: initialModel }) => {
     const textareaRef = useRef(null);
     const fileInputRef = useRef(null);
     const [isModelSelectorOpen, setIsModelSelectorOpen] = useState(false);
-    const [selectedModel, setSelectedModel] = useState("gemini-1.5-flash");
+    const [internalModel, setInternalModel] = useState(initialModel || "gemini-1.5-flash");
     const [message, setMessage] = useState('');
     const [uploadedFile, setUploadedFile] = useState(null);
     const [uploadedFilePath, setUploadedFilePath] = useState(null);
@@ -47,8 +47,13 @@ const MessageInput = ({ onSendMessage, isLoading, setIsLoading }) => {
     };
 
     const handleModelSelect = (modelId) => {
-        setSelectedModel(modelId);
+        setInternalModel(modelId);
         setIsModelSelectorOpen(false);
+        
+        // Notify parent component of model change
+        if (onModelChange) {
+            onModelChange(modelId);
+        }
     };
 
     const handleFileChange = async (event) => {
@@ -68,11 +73,25 @@ const MessageInput = ({ onSendMessage, isLoading, setIsLoading }) => {
                     }
                 });
                 
-                // Get the file URL from the response (not file_path)
-                setUploadedFilePath(response.data.file_path);
+                // Store the URL or file path returned from the backend
+                const fileUrl = response.data.file_path;
+                setUploadedFilePath(fileUrl);
+                
             } catch (error) {
-                console.error("Error uploading file:", error);
-                alert("Failed to upload file. Please try again.");
+                // More detailed error message
+                let errorMessage = "Failed to upload file. Please try again.";
+                if (error.response) {
+                    // Server responded with an error
+                    errorMessage += ` Server error: ${error.response.status}`;
+                    if (error.response.data && error.response.data.detail) {
+                        errorMessage += ` - ${error.response.data.detail}`;
+                    }
+                } else if (error.request) {
+                    // Request was made but no response
+                    errorMessage += " No response from server. Check your network connection.";
+                }
+                
+                alert(errorMessage);
                 setUploadedFile(null);
             } finally {
                 setIsLoading(false);
@@ -87,20 +106,22 @@ const MessageInput = ({ onSendMessage, isLoading, setIsLoading }) => {
         const userMessage = {
             role: "user",
             content: message,
-            is_research: deepResearch // Add this flag
+            is_research: deepResearch
         };
         
-        // Clear input
+        // Clear input immediately for better perceived performance
         setMessage('');
         adjustHeight();
         
-        // Pass all necessary flags
+        // Optimize response by setting highest priority for streaming
         onSendMessage(userMessage, {
-            model: selectedModel,
+            model: internalModel,
             file_url: uploadedFilePath,
             use_agent: useAgent,
             deep_research: deepResearch,
-            is_research: deepResearch // Ensure this flag is passed
+            is_research: deepResearch,
+            stream: true,  // Always use streaming for faster response display
+            priority: 'high' // Add priority flag
         });
         
         // Clear file upload if any
@@ -123,6 +144,11 @@ const MessageInput = ({ onSendMessage, isLoading, setIsLoading }) => {
 
     const toggleDeepResearch = () => {
         handleGlobeClick();
+        
+        // Notify parent of option change
+        if (typeof onOptionsChange === 'function') {
+            onOptionsChange({ deep_research: !deepResearch });
+        }
     };
 
     const toggleAgentChat = () => {
@@ -131,9 +157,14 @@ const MessageInput = ({ onSendMessage, isLoading, setIsLoading }) => {
             setDeepResearch(false);
         }
         setUseAgent(!useAgent);
+        
+        // Notify parent of option change
+        if (typeof onOptionsChange === 'function') {
+            onOptionsChange({ use_agent: !useAgent });
+        }
     };
 
-    const currentModel = models.find(model => model.id === selectedModel);
+    const currentModel = models.find(model => model.id === internalModel);
     const ModelIcon = currentModel ? currentModel.icon : RiSparkling2Fill;
 
     return (
@@ -174,13 +205,14 @@ const MessageInput = ({ onSendMessage, isLoading, setIsLoading }) => {
                     >
                         <ModelIcon />
                     </button>
+                    
                     <button 
                         type="button"
                         className={`${
                             theme === 'dark' 
                               ? 'text-[#cc2b5e] hover:text-[#bd194d]' 
                               : 'text-[#cc2b5e] hover:text-[#bd194d]'
-                        } transition-all text-base sm:text-lg md:text-xl p-0.5 sm:p-1 hover:bg-white/10 rounded-full relative flex items-center ${deepResearch ? 'bg-white/20' : ''}`}
+                        } transition-all text-base sm:text-lg md:text-xl p-0.5 sm:p-1 hover:bg-white/10 rounded-full flex items-center ${deepResearch ? 'bg-white/20' : ''}`}
                         title={deepResearch ? "Web research mode enabled - I'll search for up-to-date information" : "Web research mode disabled"}
                         onClick={toggleDeepResearch}
                     >
@@ -221,17 +253,6 @@ const MessageInput = ({ onSendMessage, isLoading, setIsLoading }) => {
                     >
                         <MdAttachFile />
                     </label>
-                    <button 
-                        type="button"
-                        className={`${
-                            theme === 'dark' 
-                              ? 'text-[#cc2b5e] hover:text-[#bd194d]' 
-                              : 'text-[#cc2b5e] hover:text-[#bd194d]'
-                        } transition-all text-base sm:text-lg md:text-xl p-0.5 sm:p-1 hover:bg-white/10 rounded-full`}
-                        title="Voice input (coming soon)"
-                    >
-                        <RiVoiceprintFill />
-                    </button> 
                 </div>
                 
                 {/* Model Selector Dropdown */}
@@ -268,7 +289,7 @@ const MessageInput = ({ onSendMessage, isLoading, setIsLoading }) => {
                                             type="button"
                                             key={model.id}
                                             className={`flex flex-col items-center text-center p-1.5 rounded-lg transition-all ${
-                                                selectedModel === model.id 
+                                                internalModel === model.id 
                                                     ? 'bg-[#cc2b5e]/20 shadow-[0_0_10px_rgba(204,43,94,0.2)]' 
                                                     : theme === 'dark' ? 'hover:bg-white/10' : 'hover:bg-gray-100'
                                             }`}
@@ -310,3 +331,4 @@ const MessageInput = ({ onSendMessage, isLoading, setIsLoading }) => {
 }
 
 export default MessageInput
+

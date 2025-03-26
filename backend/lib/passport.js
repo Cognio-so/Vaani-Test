@@ -3,18 +3,26 @@ const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const User = require('../model/userModel');
 const jwt = require("jsonwebtoken");
 
-// Google Strategy without session support
+// Add serialization (even without sessions, helps with passport flow)
+passport.serializeUser((userObj, done) => {
+  done(null, userObj);
+});
+
+passport.deserializeUser((userObj, done) => {
+  done(null, userObj);
+});
+
 passport.use(
   new GoogleStrategy(
     {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
       callbackURL: `${process.env.BACKEND_URL || 'https://vanni-test-backend.vercel.app'}/auth/google/callback`,
-      scope: ['profile', 'email']
+      scope: ['profile', 'email'],
+      passReqToCallback: true
     },
-    async (accessToken, refreshToken, profile, done) => {
+    async (req, accessToken, refreshToken, profile, done) => {
       try {
-        // Check if user already exists by googleId
         let user = await User.findOne({ googleId: profile.id });
 
         if (user) {
@@ -24,7 +32,6 @@ passport.use(
           return done(null, { user, token });
         }
 
-        // Check if user exists with the same email
         user = await User.findOne({ email: profile.emails[0].value });
 
         if (user) {
@@ -39,12 +46,12 @@ passport.use(
           return done(null, { user, token });
         }
 
-        // Create new user
         const newUser = new User({
           name: profile.displayName,
           email: profile.emails[0].value,
           googleId: profile.id,
-          profilePicture: profile.photos && profile.photos.length > 0 ? profile.photos[0].value : null
+          profilePicture: profile.photos && profile.photos.length > 0 ? profile.photos[0].value : null,
+          isVerified: true
         });
 
         await newUser.save();
