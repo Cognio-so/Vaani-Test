@@ -51,16 +51,19 @@ const Login = async (req, res) => {
     const isPasswordCorrect = await bcrypt.compare(password, user.password);
     if (!isPasswordCorrect) return res.status(400).json({ message: "Invalid password" });
 
-    generateToken(user._id, res);
+    // Generate token and set cookie
+    const token = generateToken(user._id, res);
+    console.log("Login successful for:", email, "Token:", token.substring(0, 10) + "...");
 
+    // Return user data
     res.status(200).json({
       _id: user._id,
       name: user.name,
       email: user.email,
     });
   } catch (error) {
-    console.log("Error in login controller", error.message);
-    res.status(500).json({ message: "Internal Server Error" });
+    console.error("Error in login controller:", error);
+    res.status(500).json({ message: "Internal Server Error", error: error.message });
   }
 };
 
@@ -104,20 +107,30 @@ const getProfile = async (req, res) => {
 };
 
 const generateToken = (userId, res) => {
-  const token = jwt.sign({ userId }, process.env.JWT_SECRET, {
-    expiresIn: '30d'
-  });
-
-  // Log token generation
-
-  // Use the same settings for all cookie instances
-  res.cookie('jwt', token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production', 
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-    path: '/',
-    maxAge: 30 * 24 * 60 * 60 * 1000
-  });
+  try {
+    if (!process.env.JWT_SECRET) {
+      throw new Error("JWT_SECRET is not defined");
+    }
+    
+    const token = jwt.sign({ userId }, process.env.JWT_SECRET, {
+      expiresIn: '30d'
+    });
+    
+    // Use consistent cookie settings across the application
+    res.cookie('jwt', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      path: '/',
+      maxAge: 30 * 24 * 60 * 60 * 1000
+    });
+    
+    console.log("Token generated and cookie set for userId:", userId);
+    return token;
+  } catch (error) {
+    console.error("Error in generateToken:", error);
+    throw error;
+  }
 };
 
 const googleAuth = passport.authenticate('google', {
