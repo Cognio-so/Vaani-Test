@@ -152,7 +152,7 @@ const googleCallback = async (req, res, next) => {
       res.redirect(redirectUrl);
     } catch (error) {
       console.error('Google auth callback error:', error);
-      res.redirect(`${process.env.FRONTEND_URL || 'https://vanni-test-frontend.vercel.app'}/login?error=auth_failed`);
+      res.redirect(`${process.env.FRONTEND_URL || 'https://vanni-test.vercel.app'}/login?error=auth_failed`);
     }
   })(req, res, next);
 };

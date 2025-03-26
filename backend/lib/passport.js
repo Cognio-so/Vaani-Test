@@ -12,15 +12,12 @@ passport.deserializeUser((userObj, done) => {
   done(null, userObj);
 });
 
-const callbackURL = `${process.env.BACKEND_URL || 'https://vanni-test-backend.vercel.app'}/auth/google/callback`;
-console.log('Google Auth Callback URL:', callbackURL);
-
 passport.use(
   new GoogleStrategy(
     {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: callbackURL,
+      callbackURL: `${process.env.BACKEND_URL || 'https://vanni-test-backend.vercel.app'}/auth/google/callback`,
       scope: ['profile', 'email'],
       passReqToCallback: true
     },
