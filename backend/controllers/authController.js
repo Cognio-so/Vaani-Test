@@ -2,7 +2,7 @@ const User = require("../model/userModel");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const passport = require('../lib/passport');
-const generateToken = require('../lib/utils')
+const { generateToken } = require('../lib/utils');
 
 const Signup = async (req, res) => {
   const { name, email, password } = req.body;
@@ -46,13 +46,27 @@ const Login = async (req, res) => {
   const { email, password } = req.body;
 
   try {
+    console.log(`Login attempt for email: ${email}`);
+    
+    if (!email || !password) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
     const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ message: "User not found" });
+    if (!user) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
 
-    const isPasswordCorrect = await bcrypt.compare(password, user.password);
-    if (!isPasswordCorrect) return res.status(400).json({ message: "Invalid password" });
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
 
+    console.log("Found user, generating token...");
+    
     generateToken(user._id, res);
+    
+    console.log("Token generated successfully");
 
     res.status(200).json({
       _id: user._id,
@@ -60,8 +74,11 @@ const Login = async (req, res) => {
       email: user.email,
     });
   } catch (error) {
-    console.log("Error in login controller", error.message);
-    res.status(500).json({ message: "Internal Server Error" });
+    console.error("Error in login controller:", error);
+    res.status(500).json({ 
+      message: "Internal Server Error",
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined 
+    });
   }
 };
 
