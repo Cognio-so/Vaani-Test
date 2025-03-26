@@ -57,10 +57,10 @@ app.add_middleware(
     allow_origins=[
         "https://vanni-test-frontend.vercel.app",
         "https://vanni-test.vercel.app",
-        "http://localhost:5173", 
-        "http://localhost:5174",
+        "https://vanni-test-frontend.vercel.app", 
+        "http://localhost:5173",
         # Add your production domain here after deployment
-        "https://vanni-test-frontend.vercel.app",
+        "https://smith-frontend.vercel.app",
         # Allow Vercel preview deployments
         "https://*.vercel.app"
     ],
