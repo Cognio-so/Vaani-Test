@@ -32,13 +32,13 @@ app.use(
   cors({
     origin: [
       "https://vanni-test-frontend.vercel.app",
+      "https://vanni-test.vercel.app",
       "http://localhost:5173",
       "http://localhost:5174",
     ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "Cookie", "Accept"],
-    exposedHeaders: ["Set-Cookie"],
   })
 );
 

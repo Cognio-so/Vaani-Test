@@ -45,13 +45,19 @@ const Login = async (req, res) => {
   const { email, password } = req.body;
 
   try {
+    console.log("Login attempt for:", email);
+    
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ message: "User not found" });
 
     const isPasswordCorrect = await bcrypt.compare(password, user.password);
     if (!isPasswordCorrect) return res.status(400).json({ message: "Invalid password" });
 
+    console.log("User authenticated successfully:", user._id);
+    
     generateToken(user._id, res);
+
+    console.log("Token generated and cookie set");
 
     res.status(200).json({
       _id: user._id,
@@ -59,8 +65,8 @@ const Login = async (req, res) => {
       email: user.email,
     });
   } catch (error) {
-    console.log("Error in login controller", error.message);
-    res.status(500).json({ message: "Internal Server Error" });
+    console.error("Error in login controller:", error);
+    res.status(500).json({ message: "Internal Server Error", details: error.message });
   }
 };
 
@@ -82,10 +88,32 @@ const Logout = async (req, res) => {
 
 const checkAuth = async (req, res) => {
   try {
-    res.status(200).json(req.user);
+    // Get the token from cookies
+    const token = req.cookies.jwt;
+    
+    if (!token) {
+      return res.status(401).json({ message: "No token, authorization denied" });
+    }
+    
+    // Verify token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    
+    // Find user
+    const user = await User.findById(decoded.userId).select("-password");
+    
+    if (!user) {
+      return res.status(401).json({ message: "User not found" });
+    }
+    
+    // Return user data
+    res.status(200).json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+    });
   } catch (error) {
     console.log("Error in check auth controller", error.message);
-    res.status(500).json({ message: "Internal Server Error" });
+    res.status(401).json({ message: "Token verification failed" });
   }
 };
 
@@ -103,13 +131,11 @@ const generateToken = (userId, res) => {
     expiresIn: '30d'
   });
 
-  // Log token generation
-
-  // Use the same settings for all cookie instances
+  // Fix cookie settings
   res.cookie('jwt', token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production', 
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    secure: true, // Always use secure in production
+    sameSite: 'none', // Critical for cross-domain cookies
     path: '/',
     maxAge: 30 * 24 * 60 * 60 * 1000
   });
