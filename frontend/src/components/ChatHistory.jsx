@@ -240,11 +240,11 @@ const ChatHistory = ({ isOpen, onClose, conversations, onSelectConversation }) =
                         animate={{ scale: 1, opacity: 1 }}
                         exit={{ scale: 0.8, opacity: 0 }}
                         transition={{ type: "spring", damping: 20, stiffness: 300 }}
-                        className="fixed inset-0 flex items-center justify-center"
+                        className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
                     >
                         <div className={`${
                             theme === 'dark' ? 'bg-[#1a1a1a]' : 'bg-white'
-                        } w-[95%] max-w-4xl rounded-lg shadow-lg overflow-hidden`}>
+                        } w-full max-w-4xl rounded-lg shadow-lg overflow-hidden max-h-[90vh] flex flex-col`}>
                             <div className={`p-3 sm:p-4 border-b ${
                                 theme === 'dark' ? 'border-gray-800' : 'border-gray-200'
                             } flex justify-between items-center`}>

@@ -139,11 +139,6 @@ const ChatContainer = () => {
               
               if (data.type === 'status') {
                 setAgentStatus(data.status);
-                setMessages(prev => prev.map(msg => 
-                  msg.id === tempMessageId
-                    ? { ...msg, content: `**Researching**: ${data.status}` }
-                    : msg
-                ));
               } 
               else if (data.type === 'result') {
                 await new Promise(resolve => setTimeout(resolve, 500));
@@ -353,14 +348,12 @@ const ChatContainer = () => {
          messageText.includes('audio') ||
          messageText.includes('song'));
       
-      
-      
       // Don't add temporary message for media requests to avoid conflicts
       if (!isMediaRequest && !isGeneratingMedia) {
         const tempMessageId = Date.now();
         setMessages(prev => [...prev, {
           role: 'assistant',
-          content: 'Thinking...',
+          content: '',
           isTemporary: true,
           id: tempMessageId
         }]);
@@ -418,26 +411,52 @@ const ChatContainer = () => {
               const data = JSON.parse(line);
               
               if (data.type === "status") {
-                if (data.status === "typing") {
-                  setLoadingState({ type: "typing" });
-                } 
-                else if (data.status === "generating_image") {
-                  setLoadingState({ type: "image" });
-                }
-                else if (data.status === "generating_music") {
-                  setLoadingState({ type: "music" });
+                setAgentStatus(data.status);
+              }
+              else if (data.type === "chunk") {
+                // Fix: Accumulate chunks properly for streaming text
+                if (!isMediaRequest && !isGeneratingMedia) {
+                  setMessages(prev => {
+                    const newMessages = [...prev];
+                    const tempIndex = newMessages.findIndex(msg => msg.isTemporary);
+                    
+                    if (tempIndex >= 0) {
+                      newMessages[tempIndex] = {
+                        ...newMessages[tempIndex],
+                        content: newMessages[tempIndex].content + data.chunk
+                      };
+                    } else {
+                      newMessages.push({
+                        role: 'assistant',
+                        content: data.chunk,
+                        isTemporary: true,
+                        id: Date.now()
+                      });
+                    }
+                    
+                    return newMessages;
+                  });
+                } else {
+                  fullResponse += data.chunk;
                 }
               }
-              else if (data.type === "token") {
-                if (!isMediaRequest && !isGeneratingMedia) {
-                  setMessages(prev => prev.map(msg => 
-                    msg.isTemporary
-                      ? { ...msg, content: data.token }
-                      : msg
-                  ));
-                } else {
-                  fullResponse = data.token;
+              else if (data.type === "done") {
+                // Mark the message as permanent when done
+                setMessages(prev => {
+                  const newMessages = prev.map(msg => 
+                    msg.isTemporary ? { ...msg, isTemporary: false } : msg
+                  );
+                  saveChat(newMessages);
+                  return newMessages;
+                });
+                
+                if (!threadId && data.thread_id) {
+                  setThreadId(data.thread_id);
+                  chatIdRef.current = data.thread_id;
                 }
+                
+                setIsLoading(false);
+                setAgentStatus("");
               }
               else if (data.type === "result") {
                 const content = data.message?.content || '';
@@ -458,8 +477,6 @@ const ChatContainer = () => {
                   content.includes('audio-url');
                 
                 const isMediaResponse = containsImageUrl || containsMusicUrl;
-                
-                
                 
                 setIsLoading(false);
                 setAgentStatus("");
@@ -485,6 +502,11 @@ const ChatContainer = () => {
                     saveChat(newMessages);
                     return newMessages;
                   });
+                }
+                
+                if (!threadId && data.thread_id) {
+                  setThreadId(data.thread_id);
+                  chatIdRef.current = data.thread_id;
                 }
               }
             } catch (jsonError) {
@@ -634,155 +656,164 @@ const ChatContainer = () => {
     return { text, imageUrls, musicUrls };
   };
 
-  const ModernAudioPlayer = ({ url }) => {
-    const { theme } = useContext(ThemeContext);
-    const [isPlaying, setIsPlaying] = useState(false);
-    const [currentTime, setCurrentTime] = useState(0);
-    const [duration, setDuration] = useState(0);
-    const audioRef = useRef(null);
-
-    const togglePlay = () => {
-      if (audioRef.current) {
-        if (isPlaying) {
-          audioRef.current.pause();
-        } else {
-          audioRef.current.play();
+  const extractSources = (content) => {
+    if (!content) return [];
+    
+    // Look for URLs in the content
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const sources = [];
+    let match;
+    
+    // Find all URLs in the content
+    while ((match = urlRegex.exec(content)) !== null) {
+      try {
+        const url = match[0].replace(/\.$/, ''); // Remove trailing period if present
+        
+        // Skip media URLs
+        const isMediaUrl = 
+          /\.(jpg|jpeg|png|gif|webp|mp3|wav|ogg|m4a)$/i.test(url) || 
+          url.includes('musicfy.lol') || 
+          url.includes('replicate.delivery') || 
+          url.includes('replicate.com') ||
+          url.includes('r2.cloudflarestorage') ||
+          url.includes('cloudfront') ||
+          url.includes('amazonaws');
+        
+        // Only add unique non-media URLs
+        if (!isMediaUrl && !sources.some(s => s.url === url)) {
+          sources.push({
+            url: url,
+            // Try to extract domain for title
+            title: new URL(url).hostname.replace('www.', '')
+          });
         }
-        setIsPlaying(!isPlaying);
+      } catch (e) {
+        console.error("Error parsing URL:", match[0]);
+      }
+    }
+    
+    return sources;
+  };
+
+  const SourcesDropdown = ({ sources }) => {
+    const { theme } = useContext(ThemeContext);
+    const [isOpen, setIsOpen] = useState(false);
+    
+    if (!sources || sources.length === 0) return null;
+    
+    // Function to determine if a URL is a storage or media URL
+    const isStorageUrl = (url) => {
+      try {
+        const domain = new URL(url).hostname;
+        return domain.includes('cloudflarestorage') || 
+               domain.includes('amazonaws') ||
+               domain.includes('cloudfront') ||
+               domain.includes('replicate');
+      } catch (e) {
+        return false;
       }
     };
-
-    const handleDownload = () => {
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'audio-' + Date.now() + '.mp3';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    };
-
-    const handleTimeUpdate = () => {
-      if (audioRef.current) {
-        setCurrentTime(audioRef.current.currentTime);
-      }
-    };
-
-    const handleLoadedMetadata = () => {
-      if (audioRef.current) {
-        setDuration(audioRef.current.duration);
-      }
-    };
-
-    const handleSliderChange = (e) => {
-      const newTime = parseFloat(e.target.value);
-      setCurrentTime(newTime);
-      if (audioRef.current) {
-        audioRef.current.currentTime = newTime;
-      }
-    };
-
-    const formatTime = (time) => {
-      const minutes = Math.floor(time / 60);
-      const seconds = Math.floor(time % 60);
-      return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-    };
-
-    return (
-      <div className="rounded-xl overflow-hidden shadow-lg">
-        <div className={`${theme === 'dark' ? 'bg-gradient-to-r from-[#1a1a1a] to-[#2a2a2a] border border-white/10' : 'bg-gradient-to-r from-gray-100 to-gray-200 border border-gray-300'} p-4`}>
-          <audio 
-            ref={audioRef}
-            src={url} 
-            onTimeUpdate={handleTimeUpdate}
-            onLoadedMetadata={handleLoadedMetadata}
-            onEnded={() => setIsPlaying(false)}
-            className="hidden"
+    
+    // Get icon for the source based on domain type
+    const getSourceIcon = (source) => {
+      try {
+        const url = source.url;
+        const domain = new URL(url).hostname;
+        
+        // For storage URLs, use a custom generic icon
+        if (isStorageUrl(url)) {
+          return (
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 6C2.89543 6 2 6.89543 2 8V16C2 17.1046 2.89543 18 4 18H20C21.1046 18 22 17.1046 22 16V8C22 6.89543 21.1046 6 20 6H4Z" />
+              <path d="M12 18V6" />
+            </svg>
+          );
+        }
+        
+        // For normal websites, use a favicon with fallback
+        return (
+          <img 
+            src={`https://www.google.com/s2/favicons?domain=${domain}&sz=32`} 
+            alt=""
+            className="w-4 h-4"
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='24' height='24'%3E%3Cpath fill='none' d='M0 0h24v24H0z'/%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z' fill='%23999'/%3E%3C/svg%3E";
+            }}
           />
-          
-          <div className="flex items-center mb-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#cc2b5e] to-[#753a88] flex items-center justify-center text-white">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-                <path d="M9 19V5l12-2v12h-5c0 1.66-1.34 3-3 3s-3-1.34-3-3h-4zm1-7h10V7L10 8.5v3.5zm2 7c.55 0 1-.45 1-1s-.45-1-1-1-1 .45-1 1 .45 1 1 1z"/>
-              </svg>
-            </div>
-            <div className="ml-3 flex-1">
-              <h3 className={`text-sm font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>Generated Audio</h3>
-              <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Vaani.pro</p>
-            </div>
-            <button 
-              onClick={handleDownload}
-              className="bg-[#cc2b5e]/80 hover:bg-[#cc2b5e] text-white rounded-full w-8 h-8 flex items-center justify-center transition-all shadow-md"
-              title="Download audio"
-            >
-              <FaDownload className="w-3 h-3" />
-            </button>
-          </div>
-          
-          <div className="h-16 mb-2 flex items-center justify-center">
-            <div className="flex items-end space-x-[2px] w-full">
-              {[...Array(40)].map((_, i) => {
-                const baseHeight = Math.sin(i * 0.2) * 0.3 + 0.5;
-                const activeHeight = isPlaying 
-                  ? Math.sin((i * 0.2) + (Date.now() / 500)) * 0.4 + 0.6
-                  : baseHeight;
-                const height = (currentTime / duration > i / 40) ? activeHeight : baseHeight;
-                
-                return (
-                  <div 
-                    key={i}
-                    className={`rounded-full transition-all duration-200 ${
-                      currentTime / duration > i / 40 
-                        ? 'bg-[#cc2b5e]' 
-                        : theme === 'dark' ? 'bg-gray-600' : 'bg-gray-400'
-                    }`}
-                    style={{ 
-                      height: `${Math.max(4, height * 40)}px`, 
-                      width: '2px',
-                    }}
-                  />
-                );
+        );
+      } catch (e) {
+        // Fallback for invalid URLs
+        return (
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+        );
+      }
+    };
+    
+    return (
+      <div className="mt-2">
+        <button 
+          onClick={() => setIsOpen(!isOpen)}
+          className={`flex items-center space-x-2 rounded-lg px-2 py-1.5 text-xs ${
+            theme === 'dark' 
+              ? 'bg-white/10 hover:bg-white/15 text-white' 
+              : 'bg-gray-100 hover:bg-gray-200 text-gray-800'
+          } transition-colors`}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="7 10 12 15 17 10"></polyline>
+          </svg>
+          <span>{sources.length} {sources.length === 1 ? 'Source' : 'Sources'}</span>
+        </button>
+        
+        {isOpen && (
+          <div className={`mt-2 p-2 rounded-lg ${
+            theme === 'dark' 
+              ? 'bg-black/40 border border-white/10' 
+              : 'bg-white border border-gray-200 shadow-md'
+          }`}>
+            <div className="flex flex-wrap gap-2">
+              {sources.map((source, index) => {
+                try {
+                  const domain = new URL(source.url).hostname;
+                  const title = source.title || domain.replace('www.', '');
+                  
+                  return (
+                    <a 
+                      key={index}
+                      href={source.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`flex items-center rounded-md p-2 ${
+                        theme === 'dark' 
+                          ? 'bg-white/5 hover:bg-white/10' 
+                          : 'bg-gray-50 hover:bg-gray-100'
+                      } transition-colors`}
+                      title={source.url}
+                    >
+                      <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center mr-2 ${
+                        theme === 'dark' ? 'bg-white/10' : 'bg-gray-100'
+                      }`}>
+                        {getSourceIcon(source)}
+                      </div>
+                      <span className={`text-xs font-medium ${
+                        theme === 'dark' ? 'text-white' : 'text-gray-800'
+                      }`}>
+                        {title}
+                      </span>
+                    </a>
+                  );
+                } catch (e) {
+                  return null;
+                }
               })}
             </div>
           </div>
-          
-          <div className="flex items-center">
-            <button 
-              onClick={togglePlay}
-              className="bg-[#cc2b5e] hover:bg-[#d84070] text-white rounded-full w-10 h-10 flex items-center justify-center transition-all mr-3"
-            >
-              {isPlaying ? (
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-                  <path fillRule="evenodd" d="M6.75 5.25a.75.75 0 01.75-.75H9a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H7.5a.75.75 0 01-.75-.75V5.25zm7 0a.75.75 0 01.75-.75h1.5a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75h-1.5a.75.75 0 01-.75-.75V5.25z" clipRule="evenodd" />
-                </svg>
-              ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-                  <path fillRule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653z" clipRule="evenodd" />
-                </svg>
-              )}
-            </button>
-            
-            <div className="flex-1">
-              <div className={`w-full h-1 ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-300'} rounded-full relative`}>
-                <input 
-                  type="range" 
-                  min="0" 
-                  max={duration || 100}
-                  value={currentTime}
-                  onChange={handleSliderChange}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                />
-                <div 
-                  className="absolute top-0 left-0 h-1 bg-[#cc2b5e] rounded-full" 
-                  style={{ width: `${(currentTime / duration) * 100}%` }}
-                />
-              </div>
-              <div className="flex justify-between mt-1 text-xs text-gray-400">
-                <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}>{formatTime(currentTime)}</span>
-                <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}>{formatTime(duration)}</span>
-              </div>
-            </div>
-          </div>
-        </div>
+        )}
       </div>
     );
   };
@@ -790,6 +821,20 @@ const ChatContainer = () => {
   const MessageContent = ({ content }) => {
     const { theme } = useContext(ThemeContext);
     const { text, imageUrls, musicUrls } = extractMediaUrls(content);
+    
+    // Extract sources from content
+    const sources = extractSources(content);
+    
+    // Remove URLs at the end of text for clean display
+    let cleanedText = text;
+    if (sources.length > 0) {
+      // Remove URLs from the end of the content
+      sources.forEach(source => {
+        cleanedText = cleanedText.replace(source.url, '');
+      });
+      // Clean up any empty lines at the end
+      cleanedText = cleanedText.replace(/\n+$/g, '');
+    }
     
     const handleImageDownload = (url) => {
       const xhr = new XMLHttpRequest();
@@ -819,7 +864,7 @@ const ChatContainer = () => {
     
     return (
       <div className={`message-content break-words ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>
-        {text && (
+        {cleanedText && (
           <div className={`prose ${theme === 'dark' ? 'prose-invert' : ''} prose-sm sm:prose-base max-w-none overflow-hidden`}>
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
@@ -913,10 +958,13 @@ const ChatContainer = () => {
                 ),
               }}
             >
-              {text}
+              {cleanedText}
             </ReactMarkdown>
           </div>
         )}
+        
+        {/* Replace SourceFavicons with SourcesDropdown */}
+        {sources.length > 0 && <SourcesDropdown sources={sources} />}
         
         {imageUrls.length > 0 && (
           <div className="mt-2 space-y-2">
@@ -1092,7 +1140,7 @@ const ChatContainer = () => {
   };
 
   return (
-    <div className={`relative h-screen ${theme === 'dark' ? 'bg-custom-gradient' : 'bg-white'} px-2 sm:px-4 md:px-6 py-2 sm:py-4 overflow-hidden`}>
+    <div className={`relative h-screen flex flex-col ${theme === 'dark' ? 'bg-custom-gradient' : 'bg-white'} px-2 sm:px-4 md:px-6 py-2 sm:py-4 overflow-hidden`}>
       {isHistoryOpen && (
         <div className={`fixed inset-0 ${theme === 'dark' ? 'bg-[#1a1a1a]' : 'bg-gray-100'} z-50`}>
           <ChatHistory 
@@ -1114,7 +1162,7 @@ const ChatContainer = () => {
         </div>
       )}
 
-      <div className="flex h-full">
+      <div className="flex h-full flex-1 overflow-hidden">
         <Sidebar 
           isVisible={isSidebarVisible} 
           onToggle={toggleSidebar}
@@ -1123,11 +1171,11 @@ const ChatContainer = () => {
           onNewChat={clearConversation}
         />
 
-        <main className={`flex-1 transition-all duration-300 
+        <main className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 
           ${isSidebarVisible ? 'ml-14 sm:ml-16 lg:ml-64' : 'ml-0'}`}>
           
           {hasActiveConversation ? (
-            <div className="h-full flex flex-col">
+            <div className="h-full flex flex-col overflow-hidden">
               <div className="flex-1 overflow-y-auto px-0 sm:px-2 md:px-4 py-4 sm:py-4"
                 style={{ 
                   msOverflowStyle: "none", 
@@ -1367,38 +1415,40 @@ const ChatContainer = () => {
               </div>
             </div>
           ) : (
-            <div className={`h-full ${theme === 'dark' ? 'bg-black' : 'bg-white'} px-2 sm:px-4 md:px-6 py-2 sm:py-4 flex flex-col items-center justify-center gap-4 sm:gap-4`}>
-              <div className="items-center text-center mb-4 sm:mb-6 w-full transition-all duration-300 
-                max-w-sm sm:max-w-xl md:max-w-2xl lg:max-w-3xl">
-                <h1 className="text-2xl sm:text-3xl font-bold text-[#cc2b5e]">Welcome to Vaani.pro</h1>
-                <p className="text-[#cc2b5e] text-2xl sm:text-xl mt-2">How may I help you?</p>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto mt-6">
-                  {predefinedPrompts.map((item) => (
-                    <motion.div
-                      key={item.id}
-                      className={`group relative ${
-                        theme === 'dark' 
-                          ? 'bg-white/[0.05] backdrop-blur-xl border border-white/20 hover:bg-white/[0.08] shadow-[0_0_20px_rgba(204,43,94,0.3)] hover:shadow-[0_0_20px_rgba(204,43,94,0.5)]' 
-                          : 'bg-gray-100 border border-gray-200 hover:bg-gray-200 shadow-md hover:shadow-lg'
-                      } rounded-xl p-4 cursor-pointer transition-all duration-100`}
-                      whileHover={{ 
-                        scale: 1.03,
-                        transition: { duration: 0.2 }
-                      }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => handlePromptClick(item)}
-                    >
-                      <div className="relative z-10">
-                        <h3 className={`${theme === 'dark' ? 'text-white/90' : 'text-gray-800'} font-medium text-sm mb-2`}>
-                          {item.title}
-                        </h3>
-                        <p className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'} text-xs line-clamp-2`}>
-                          {item.prompt}
-                        </p>
-                      </div>
-                    </motion.div>
-                  ))}
+            <div className={`h-full flex-1 flex flex-col ${theme === 'dark' ? 'bg-black' : 'bg-white'} px-2 sm:px-4 md:px-6 py-2 sm:py-4 items-center justify-between overflow-hidden`}>
+              <div className="flex-1 flex items-center justify-center">
+                <div className="items-center text-center w-full transition-all duration-300 
+                  max-w-sm sm:max-w-xl md:max-w-2xl lg:max-w-3xl">
+                  <h1 className="text-2xl sm:text-3xl font-bold text-[#cc2b5e]">Welcome to Vaani.pro</h1>
+                  <p className="text-[#cc2b5e] text-2xl sm:text-xl mt-2">How may I help you?</p>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto mt-6">
+                    {predefinedPrompts.map((item) => (
+                      <motion.div
+                        key={item.id}
+                        className={`group relative ${
+                          theme === 'dark' 
+                            ? 'bg-white/[0.05] backdrop-blur-xl border border-white/20 hover:bg-white/[0.08] shadow-[0_0_20px_rgba(204,43,94,0.3)] hover:shadow-[0_0_20px_rgba(204,43,94,0.5)]' 
+                            : 'bg-gray-100 border border-gray-200 hover:bg-gray-200 shadow-md hover:shadow-lg'
+                        } rounded-xl p-4 cursor-pointer transition-all duration-100`}
+                        whileHover={{ 
+                          scale: 1.03,
+                          transition: { duration: 0.2 }
+                        }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => handlePromptClick(item)}
+                      >
+                        <div className="relative z-10">
+                          <h3 className={`${theme === 'dark' ? 'text-white/90' : 'text-gray-800'} font-medium text-sm mb-2`}>
+                            {item.title}
+                          </h3>
+                          <p className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'} text-xs line-clamp-2`}>
+                            {item.prompt}
+                          </p>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
                 </div>
               </div>
               
