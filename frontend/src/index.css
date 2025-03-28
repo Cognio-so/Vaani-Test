@@ -3,6 +3,11 @@
 @tailwind utilities;
 
 /* Hide scrollbar for entire site */
+html,body, #root {
+  height: 100%;
+  overflow: hidden;
+}
+
 html, body {
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* IE and Edge */
@@ -688,6 +693,24 @@ body {
     margin-left: 0 !important;
     margin-right: 0 !important;
     width: 100% !important;
+  }
+}
+
+/* Fixed mobile input styles */
+@media (max-width: 767px) {
+  .messages-container {
+    padding-bottom: 80px !important; /* Space for input */
+  }
+  
+  .mobile-input-container {
+    position: sticky;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 50;
+    background: var(--bg-primary);
+    padding: 8px 8px 12px;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
   }
 }
 
