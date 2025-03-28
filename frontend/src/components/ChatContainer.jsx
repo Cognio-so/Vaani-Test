@@ -1369,374 +1369,397 @@ const ChatContainer = () => {
   };
 
   return (
-    <div className="flex h-screen w-full overflow-hidden">
-      <Sidebar 
-        isVisible={isSidebarVisible} 
-        onToggle={toggleSidebar}
-        onOpenSettings={() => setIsSettingsOpen(true)}
-        onOpenHistory={() => setIsHistoryOpen(true)}
-        onNewChat={clearConversation}
-      />
+    <div className={`relative h-screen flex flex-col ${theme === 'dark' ? 'bg-custom-gradient' : 'bg-white'} px-2 sm:px-4 md:px-6 py-2 sm:py-4 overflow-hidden`}>
+      {isHistoryOpen && (
+        <div className={`fixed inset-0 ${theme === 'dark' ? 'bg-[#1a1a1a]' : 'bg-gray-100'} z-50`}>
+          <ChatHistory 
+            isOpen={isHistoryOpen} 
+            onClose={() => setIsHistoryOpen(false)} 
+            conversations={conversations}
+            onSelectConversation={loadChat}
+          />
+        </div>
+      )}
 
-      <main className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 
-        ${isSidebarVisible ? 'ml-16 sm:ml-20 lg:ml-64' : 'ml-0'}`}>
-        
-        {/* Added logo header */}
-        <div className="flex justify-between items-center py-2 px-4 ml-16">
-          {/* Logo that shows only when sidebar is hidden or on small screens */}
-          <div className={`flex items-center ${isSidebarVisible ? 'sm:hidden' : ''}`}>
-            <img src="/vannipro.png" alt="Vaani.pro Logo" className="h-8 sm:h-9" />
-            <h1 className="text-lg sm:text-xl font-bold ml-2 text-[#cc2b5e]">Vaani.pro</h1>
-          </div>
+      {isSettingsOpen && (
+        <div className={`fixed inset-0 ${theme === 'dark' ? 'bg-[#1a1a1a]' : 'bg-gray-100'} z-50`}>
+          <Settings 
+            isOpen={isSettingsOpen} 
+            onClose={() => setIsSettingsOpen(false)} 
+            onClearConversation={clearConversation}
+          />
+        </div>
+      )}
+
+      <div className="flex h-full flex-1 overflow-hidden">
+        <Sidebar 
+          isVisible={isSidebarVisible} 
+          onToggle={toggleSidebar}
+          onOpenSettings={() => setIsSettingsOpen(true)}
+          onOpenHistory={() => setIsHistoryOpen(true)}
+          onNewChat={clearConversation}
+        />
+
+        <main className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 
+          ${isSidebarVisible ? 'ml-16 sm:ml-20 lg:ml-64' : 'ml-0'}`}>
           
-          {/* Share button that shows when sidebar is visible on non-small screens */}
-          <div className={`${!isSidebarVisible || window.innerWidth < 640 ? 'hidden' : 'flex'} items-center`}>
-            <button className="flex items-center bg-transparent hover:bg-[#cc2b5e]/30 text-[#cc2b5e] px-3 py-1.5 rounded-full text-sm transition-colors">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
-              </svg>
-              Share
-            </button>
-          </div>
-          
-          {/* User profile picture at top right */}
-          <div className="flex items-center">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full overflow-hidden">
-              <img 
-                src={user?.profilePicture || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23cc2b5e'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/%3E%3C/svg%3E"}
-                alt={user?.name || "Profile"} 
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  e.target.onerror = null;
-                  e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23cc2b5e'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/%3E%3C/svg%3E";
-                }}
-              />
+          {/* Added logo header */}
+          <div className="flex justify-between items-center py-2 px-4 ml-16">
+            {/* Logo that shows only when sidebar is hidden or on small screens */}
+            <div className={`flex items-center ${isSidebarVisible ? 'sm:hidden' : ''}`}>
+              <img src="/vannipro.png" alt="Vaani.pro Logo" className="h-8 sm:h-9" />
+              <h1 className="text-lg sm:text-xl font-bold ml-2 text-[#cc2b5e]">Vaani.pro</h1>
+            </div>
+            
+            {/* Share button that shows when sidebar is visible on non-small screens */}
+            <div className={`${!isSidebarVisible || window.innerWidth < 640 ? 'hidden' : 'flex'} items-center`}>
+              <button className="flex items-center bg-transparent hover:bg-[#cc2b5e]/30 text-[#cc2b5e] px-3 py-1.5 rounded-full text-sm transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
+                </svg>
+                Share
+              </button>
+            </div>
+            
+            {/* User profile picture at top right */}
+            <div className="flex items-center">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full overflow-hidden">
+                <img 
+                  src={user?.profilePicture || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23cc2b5e'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/%3E%3C/svg%3E"}
+                  alt={user?.name || "Profile"} 
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23cc2b5e'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/%3E%3C/svg%3E";
+                  }}
+                />
+              </div>
             </div>
           </div>
-        </div>
-        
-        {hasActiveConversation ? (
-          <div className="h-full flex flex-col overflow-hidden">
-            <div className="flex-1 overflow-y-auto px-0 py-4 mt-3 scroll-smooth" 
-              style={{ 
-                msOverflowStyle: "none", 
-                scrollbarWidth: "none",
-                WebkitOverflowScrolling: "touch",
-                willChange: 'transform' // Add hardware acceleration
-              }}
-            >
-              <style>{`
-                .messages-container::-webkit-scrollbar {
-                  display: none;
-                }
-                
-                .message-content img {
-                  max-width: 100%;
-                  height: auto;
-                }
-                
-                .message-content pre {
-                  max-width: 100%;
-                  overflow-x: auto;
-                  font-size: 18px;
-                }
-                
-                .react-syntax-highlighter-line {
-                  white-space: pre-wrap !important;
-                  word-break: break-word !important;
-                }
-                
-                /* Table responsive styles */
-                .message-content table {
-                  width: 100%;
-                  display: block;
-                  overflow-x: auto;
-                  -webkit-overflow-scrolling: ;
-                }
-                
-                @media (min-width: 768px) {
-                  .message-content table {
-                    display: table;
+          
+          {hasActiveConversation ? (
+            <div className="h-full flex flex-col overflow-hidden">
+              <div className="flex-1 overflow-y-auto px-0 py-4 mt-3 scroll-smooth" 
+                style={{ 
+                  msOverflowStyle: "none", 
+                  scrollbarWidth: "none",
+                  WebkitOverflowScrolling: "touch",
+                  willChange: 'transform' // Add hardware acceleration
+                }}
+              >
+                <style>{`
+                  .messages-container::-webkit-scrollbar {
+                    display: none;
                   }
-                }
-                
-                .message-content th,
-                .message-content td {
-                  min-width: 100px;
-                  white-space: normal;
-                  word-break: break-word;
-                }
-                
-                @media (max-width: 640px) {
+                  
+                  .message-content img {
+                    max-width: 100%;
+                    height: auto;
+                  }
+                  
                   .message-content pre {
                     max-width: 100%;
+                    overflow-x: auto;
                     font-size: 18px;
+                  }
+                  
+                  .react-syntax-highlighter-line {
+                    white-space: pre-wrap !important;
+                    word-break: break-word !important;
+                  }
+                  
+                  /* Table responsive styles */
+                  .message-content table {
+                    width: 100%;
+                    display: block;
+                    overflow-x: auto;
+                    -webkit-overflow-scrolling: ;
+                  }
+                  
+                  @media (min-width: 768px) {
+                    .message-content table {
+                      display: table;
+                    }
                   }
                   
                   .message-content th,
                   .message-content td {
-                    padding: 4px;
-                    font-size: 0.85rem;
+                    min-width: 100px;
+                    white-space: normal;
+                    word-break: break-word;
                   }
-                }
-                
-                @keyframes pulse {
-                  0%, 100% { transform: scaleY(1); }
-                  50% { transform: scaleY(1.5); }
-                }
-                
-                @keyframes shimmer {
-                  0% {
-                    background-position: -200% 0;
-                  }
-                  100% {
-                    background-position: 200% 0;
-                  }
-                }
-                
-                .animate-shimmer {
-                  animation: shimmer 2s infinite;
-                }
-                
-                @keyframes sound-wave {
-                  0%, 100% {
-                    height: 5px;
-                  }
-                  50% {
-                    height: 30px;
-                  }
-                }
-                
-                .animate-sound-wave {
-                  animation: sound-wave 1s ease-in-out infinite;
-                }
-                
-                @keyframes audio-pulse {
-                  0%, 100% { height: 6px; }
-                  50% { height: 20px; }
-                }
-                
-                .animate-audio-pulse {
-                  animation: audio-pulse 1.2s ease-in-out infinite;
-                }
-                
-                @keyframes wave {
-                  0%, 100% {
-                    transform: scaleY(0.5);
-                  }
-                  50% {
-                    transform: scaleY(1);
-                  }
-                }
-                
-                .animate-wave {
-                  animation: wave 1.2s ease-in-out infinite;
-                }
-                
-                input[type="range"]::-webkit-slider-thumb {
-                  -webkit-appearance: none;
-                  appearance: none;
-                  width: 12px;
-                  height: 12px;
-                  background: #cc2b5e;
-                  border-radius: 50%;
-                  cursor: pointer;
-                }
-                
-                input[type="range"]::-moz-range-thumb {
-                  width: 12px;
-                  height: 12px;
-                  background: #cc2b5e;
-                  border-radius: 50%;
-                  cursor: pointer;
-                  border: none;
-                }
-                
-                .loading-dots {
-                  display: inline-flex;
-                }
-                
-                .loading-dots .dot {
-                  animation: loadingDot 1.4s infinite;
-                  animation-fill-mode: both;
-                  font-size: 1.5em;
-                  line-height: 0.5;
-                  margin-left: 2px;
-                  opacity: 0;
-                }
-                
-                .loading-dots .dot:nth-child(1) {
-                  animation-delay: 0.2s;
-                }
-                
-                .loading-dots .dot:nth-child(2) {
-                  animation-delay: 0.4s;
-                }
-                
-                .loading-dots .dot:nth-child(3) {
-                  animation-delay: 0.6s;
-                }
-                
-                @keyframes loadingDot {
-                  0% { opacity: 0; }
-                  25% { opacity: 0; }
-                  50% { opacity: 1; }
-                  75% { opacity: 1; }
-                  100% { opacity: 0; }
-                }
-                
-                /* Add these new styles */
-                .scroll-smooth {
-                  scroll-behavior: smooth;
-                }
-                
-                /* Optimize rendering */
-                .message-content {
-                  transform: translateZ(0);
-                  backface-visibility: hidden;
-                  perspective: 1000px;
-                }
-                
-                /* Reduce layout shifts */
-                .messages-container {
-                  contain: content;
-                }
-                
-                /* Prevent text selection during scrolling */
-                .no-select {
-                  user-select: none;
-                }
-              `}</style>
-              
-              <div className="w-full max-w-[95%] xs:max-w-[90%] sm:max-w-3xl md:max-w-3xl mx-auto">
-                {messages.map((msg, index) => {
-                  const displayContent = msg.role === 'assistant' 
-                    ? msg.content 
-                    : sanitizeContent(msg.content);
                   
-                  return (
-                    <div 
-                      key={index} 
-                      className={`mb-6 ${index === 0 ? 'mt-5' : ''} w-full flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                      {msg.role === 'user' ? (
-                        <div className={`${
-                          theme === 'dark'
-                            ? 'bg-white/30 text-white' 
-                            : 'bg-black/20 text-white'
-                        } rounded-3xl p-3 px-4 overflow-hidden inline-block`} style={{maxWidth: '85%'}}>
-                          <MessageContent content={displayContent} />
-                        </div>
-                      ) : (
-                        <div className={`${
-                          theme === 'dark'
-                            ? 'text-white' 
-                            : 'text-gray-800'
-                        } rounded-xl p-0 overflow-hidden inline-block w-full max-w-[95%] xs:max-w-[90%] sm:max-w-3xl md:max-w-3xl`}>
-                          <MessageContent content={displayContent} />
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-                <div ref={messagesEndRef} />
+                  @media (max-width: 640px) {
+                    .message-content pre {
+                      max-width: 100%;
+                      font-size: 18px;
+                    }
+                    
+                    .message-content th,
+                    .message-content td {
+                      padding: 4px;
+                      font-size: 0.85rem;
+                    }
+                  }
+                  
+                  @keyframes pulse {
+                    0%, 100% { transform: scaleY(1); }
+                    50% { transform: scaleY(1.5); }
+                  }
+                  
+                  @keyframes shimmer {
+                    0% {
+                      background-position: -200% 0;
+                    }
+                    100% {
+                      background-position: 200% 0;
+                    }
+                  }
+                  
+                  .animate-shimmer {
+                    animation: shimmer 2s infinite;
+                  }
+                  
+                  @keyframes sound-wave {
+                    0%, 100% {
+                      height: 5px;
+                    }
+                    50% {
+                      height: 30px;
+                    }
+                  }
+                  
+                  .animate-sound-wave {
+                    animation: sound-wave 1s ease-in-out infinite;
+                  }
+                  
+                  @keyframes audio-pulse {
+                    0%, 100% { height: 6px; }
+                    50% { height: 20px; }
+                  }
+                  
+                  .animate-audio-pulse {
+                    animation: audio-pulse 1.2s ease-in-out infinite;
+                  }
+                  
+                  @keyframes wave {
+                    0%, 100% {
+                      transform: scaleY(0.5);
+                    }
+                    50% {
+                      transform: scaleY(1);
+                    }
+                  }
+                  
+                  .animate-wave {
+                    animation: wave 1.2s ease-in-out infinite;
+                  }
+                  
+                  input[type="range"]::-webkit-slider-thumb {
+                    -webkit-appearance: none;
+                    appearance: none;
+                    width: 12px;
+                    height: 12px;
+                    background: #cc2b5e;
+                    border-radius: 50%;
+                    cursor: pointer;
+                  }
+                  
+                  input[type="range"]::-moz-range-thumb {
+                    width: 12px;
+                    height: 12px;
+                    background: #cc2b5e;
+                    border-radius: 50%;
+                    cursor: pointer;
+                    border: none;
+                  }
+                  
+                  .loading-dots {
+                    display: inline-flex;
+                  }
+                  
+                  .loading-dots .dot {
+                    animation: loadingDot 1.4s infinite;
+                    animation-fill-mode: both;
+                    font-size: 1.5em;
+                    line-height: 0.5;
+                    margin-left: 2px;
+                    opacity: 0;
+                  }
+                  
+                  .loading-dots .dot:nth-child(1) {
+                    animation-delay: 0.2s;
+                  }
+                  
+                  .loading-dots .dot:nth-child(2) {
+                    animation-delay: 0.4s;
+                  }
+                  
+                  .loading-dots .dot:nth-child(3) {
+                    animation-delay: 0.6s;
+                  }
+                  
+                  @keyframes loadingDot {
+                    0% { opacity: 0; }
+                    25% { opacity: 0; }
+                    50% { opacity: 1; }
+                    75% { opacity: 1; }
+                    100% { opacity: 0; }
+                  }
+                  
+                  /* Add these new styles */
+                  .scroll-smooth {
+                    scroll-behavior: smooth;
+                  }
+                  
+                  /* Optimize rendering */
+                  .message-content {
+                    transform: translateZ(0);
+                    backface-visibility: hidden;
+                    perspective: 1000px;
+                  }
+                  
+                  /* Reduce layout shifts */
+                  .messages-container {
+                    contain: content;
+                  }
+                  
+                  /* Prevent text selection during scrolling */
+                  .no-select {
+                    user-select: none;
+                  }
+                `}</style>
                 
-                {isGeneratingMedia && <MediaGenerationIndicator />}
-                
-                {isLoading && !isGeneratingMedia && !messages.some(msg => msg.isTemporary) && !mediaType && (
-                  <div className="mb-4 flex justify-start">
-                    <div className={`${theme === 'dark' ? 'text-white' : 'text-gray-800'} rounded-full p-2 sm:p-3 inline-block`}>
-                      <div className="flex items-center">
-                        <div className="flex items-center space-x-2">
-                          <div className="w-1 h-1 bg-[#cc2b5e] rounded-full animate-pulse"></div>
-                          <div className="w-1 h-1 bg-[#cc2b5e] rounded-full animate-pulse" style={{animationDelay: '0.3s'}}></div>
-                          <div className="w-1 h-1 bg-[#cc2b5e] rounded-full animate-pulse" style={{animationDelay: '0.6s'}}></div>
+                <div className="w-full max-w-[95%] xs:max-w-[90%] sm:max-w-3xl md:max-w-3xl mx-auto">
+                  {messages.map((msg, index) => {
+                    const displayContent = msg.role === 'assistant' 
+                      ? msg.content 
+                      : sanitizeContent(msg.content);
+                    
+                    return (
+                      <div 
+                        key={index} 
+                        className={`mb-6 ${index === 0 ? 'mt-5' : ''} w-full flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                        {msg.role === 'user' ? (
+                          <div className={`${
+                            theme === 'dark'
+                              ? 'bg-white/30 text-white' 
+                              : 'bg-black/20 text-white'
+                          } rounded-3xl p-3 px-4 overflow-hidden inline-block`} style={{maxWidth: '85%'}}>
+                            <MessageContent content={displayContent} />
+                          </div>
+                        ) : (
+                          <div className={`${
+                            theme === 'dark'
+                              ? 'text-white' 
+                              : 'text-gray-800'
+                          } rounded-xl p-0 overflow-hidden inline-block w-full max-w-[95%] xs:max-w-[90%] sm:max-w-3xl md:max-w-3xl`}>
+                            <MessageContent content={displayContent} />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  <div ref={messagesEndRef} />
+                  
+                  {isGeneratingMedia && <MediaGenerationIndicator />}
+                  
+                  {isLoading && !isGeneratingMedia && !messages.some(msg => msg.isTemporary) && !mediaType && (
+                    <div className="mb-4 flex justify-start">
+                      <div className={`${theme === 'dark' ? 'text-white' : 'text-gray-800'} rounded-full p-2 sm:p-3 inline-block`}>
+                        <div className="flex items-center">
+                          <div className="flex items-center space-x-2">
+                            <div className="w-1 h-1 bg-[#cc2b5e] rounded-full animate-pulse"></div>
+                            <div className="w-1 h-1 bg-[#cc2b5e] rounded-full animate-pulse" style={{animationDelay: '0.3s'}}></div>
+                            <div className="w-1 h-1 bg-[#cc2b5e] rounded-full animate-pulse" style={{animationDelay: '0.6s'}}></div>
+                          </div>
                         </div>
                       </div>
                     </div>
+                  )}
+                </div>
+              </div>
+              
+              <div className="mt-auto pb-3 w-full px-0">
+                <MessageInput 
+                  onSendMessage={handleSendMessage} 
+                  isLoading={isLoading}
+                  setIsLoading={setIsLoading}
+                  onMediaRequested={handleMediaRequested}
+                  onModelChange={handleModelChange}
+                  onOptionsChange={handleInputOptionsChange}
+                  selectedModel={model}
+                />
+              </div>
+            </div>
+          ) : (
+            <div className={`h-full flex-1 flex flex-col ${theme === 'dark' ? 'bg-black' : 'bg-white'} px-2 sm:px-4 md:px-6 py-2 sm:py-4 items-center overflow-hidden`}>
+              {/* Welcome content with vertical centering but slightly lower */}
+              <div className="w-full flex-1 flex flex-col items-center justify-center -mt-12">
+                <div className="items-center text-center w-full transition-all duration-300 
+                  max-w-sm sm:max-w-xl md:max-w-2xl lg:max-w-3xl">
+                  <h1 className="text-2xl sm:text-3xl font-bold text-[#cc2b5e]">Welcome to Vaani.pro</h1>
+                  <p className="text-[#cc2b5e] text-2xl sm:text-xl mt-2">How may I help you?</p>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto mt-8">
+                    {predefinedPrompts.map((item) => (
+                      <motion.div
+                        key={item.id}
+                        className={`group relative ${
+                          theme === 'dark' 
+                            ? 'bg-white/[0.05] backdrop-blur-xl border border-white/20 hover:bg-white/[0.08] shadow-[0_0_20px_rgba(204,43,94,0.3)] hover:shadow-[0_0_20px_rgba(204,43,94,0.5)]' 
+                            : 'bg-gray-100 border border-gray-200 hover:bg-gray-200 shadow-md hover:shadow-lg'
+                        } rounded-xl p-4 cursor-pointer transition-all duration-100`}
+                        whileHover={{ 
+                          scale: 1.03,
+                          transition: { duration: 0.2 }
+                        }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => handlePromptClick(item)}
+                      >
+                        <div className="relative z-10">
+                          <h3 className={`${theme === 'dark' ? 'text-white/90' : 'text-gray-800'} font-medium text-sm mb-2`}>
+                            {item.title}
+                          </h3>
+                          <p className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'} text-xs line-clamp-2`}>
+                            {item.prompt}
+                          </p>
+                        </div>
+                      </motion.div>
+                    ))}
                   </div>
-                )}
-              </div>
-            </div>
-            
-            <div className="mt-auto pb-3 w-full px-0">
-              <MessageInput 
-                onSendMessage={handleSendMessage} 
-                isLoading={isLoading}
-                setIsLoading={setIsLoading}
-                onMediaRequested={handleMediaRequested}
-                onModelChange={handleModelChange}
-                onOptionsChange={handleInputOptionsChange}
-                selectedModel={model}
-              />
-            </div>
-          </div>
-        ) : (
-          <div className={`h-full flex-1 flex flex-col ${theme === 'dark' ? 'bg-black' : 'bg-white'} px-2 sm:px-4 md:px-6 py-2 sm:py-4 items-center overflow-hidden`}>
-            {/* Welcome content with vertical centering but slightly lower */}
-            <div className="w-full flex-1 flex flex-col items-center justify-center -mt-12">
-              <div className="items-center text-center w-full transition-all duration-300 
-                max-w-sm sm:max-w-xl md:max-w-2xl lg:max-w-3xl">
-                <h1 className="text-2xl sm:text-3xl font-bold text-[#cc2b5e]">Welcome to Vaani.pro</h1>
-                <p className="text-[#cc2b5e] text-2xl sm:text-xl mt-2">How may I help you?</p>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto mt-8">
-                  {predefinedPrompts.map((item) => (
-                    <motion.div
-                      key={item.id}
-                      className={`group relative ${
-                        theme === 'dark' 
-                          ? 'bg-white/[0.05] backdrop-blur-xl border border-white/20 hover:bg-white/[0.08] shadow-[0_0_20px_rgba(204,43,94,0.3)] hover:shadow-[0_0_20px_rgba(204,43,94,0.5)]' 
-                          : 'bg-gray-100 border border-gray-200 hover:bg-gray-200 shadow-md hover:shadow-lg'
-                      } rounded-xl p-4 cursor-pointer transition-all duration-100`}
-                      whileHover={{ 
-                        scale: 1.03,
-                        transition: { duration: 0.2 }
-                      }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => handlePromptClick(item)}
-                    >
-                      <div className="relative z-10">
-                        <h3 className={`${theme === 'dark' ? 'text-white/90' : 'text-gray-800'} font-medium text-sm mb-2`}>
-                          {item.title}
-                        </h3>
-                        <p className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'} text-xs line-clamp-2`}>
-                          {item.prompt}
-                        </p>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
 
-                {/* Desktop MessageInput below prompts with increased spacing */}
-                <div className="hidden md:block w-full max-w-3xl mx-auto mt-12">
-                  <MessageInput 
-                    onSendMessage={handleSendMessage}
-                    isLoading={isLoading}
-                    setIsLoading={setIsLoading}
-                    onMediaRequested={handleMediaRequested}
-                    onModelChange={handleModelChange}
-                    onOptionsChange={handleInputOptionsChange}
-                    selectedModel={model}
-                  />
+                  {/* Desktop MessageInput below prompts with increased spacing */}
+                  <div className="hidden md:block w-full max-w-3xl mx-auto mt-12">
+                    <MessageInput 
+                      onSendMessage={handleSendMessage}
+                      isLoading={isLoading}
+                      setIsLoading={setIsLoading}
+                      onMediaRequested={handleMediaRequested}
+                      onModelChange={handleModelChange}
+                      onOptionsChange={handleInputOptionsChange}
+                      selectedModel={model}
+                    />
+                  </div>
                 </div>
               </div>
+              
+              {/* Mobile MessageInput at bottom */}
+              <div className="md:hidden w-full mt-auto pb-2 z-10">
+                <MessageInput 
+                  onSendMessage={handleSendMessage}
+                  isLoading={isLoading}
+                  setIsLoading={setIsLoading}
+                  onMediaRequested={handleMediaRequested}
+                  onModelChange={handleModelChange}
+                  onOptionsChange={handleInputOptionsChange}
+                  selectedModel={model}
+                />
+              </div>
             </div>
-            
-            {/* Mobile MessageInput at bottom - Add pb-safe for iOS */}
-            <div className="md:hidden w-full mt-auto pb-2 mobile-input-container">
-              <MessageInput 
-                onSendMessage={handleSendMessage}
-                isLoading={isLoading}
-                setIsLoading={setIsLoading}
-                onMediaRequested={handleMediaRequested}
-                onModelChange={handleModelChange}
-                onOptionsChange={handleInputOptionsChange}
-                selectedModel={model}
-              />
-            </div>
-          </div>
-        )}
-      </main>
+          )}
+        </main>
+      </div>
     </div>
   )
 }
