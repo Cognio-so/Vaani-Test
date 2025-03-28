@@ -38,22 +38,21 @@ const Sidebar = ({ isVisible, onToggle, onOpenSettings, onOpenHistory, onNewChat
             {!isVisible && (
                 <button 
                     onClick={onToggle}
-                    className={`fixed ml-1 mt-3 z-50 p-2 ${
-                        theme === 'dark' ? 'bg-black text-white' : 'bg-white text-gray-800'
-                    } rounded-full hover:bg-white/10 transition-all duration-300`}
+                    className={`fixed left-2 top-2 ml-2 mt-3 z-50 p-2 ${
+                        theme === 'dark' ? 'bg-black/70 text-white' : 'bg-white text-gray-800'
+                    } rounded-full hover:bg-white/10 transition-all duration-300 shadow-md`}
                 >
-                    <FaAlignRight  className="text-[#cc2b5e] text-xl" />
+                    <FaAlignRight className="text-[#cc2b5e] text-xl" />
                 </button>
             )}
             
             <div className={`fixed left-0 top-0 h-screen w-14 sm:w-16 lg:w-64 ${
-                theme === 'dark' ? 'bg-black text-white' : 'bg-white text-gray-800 border-r border-gray-200'
+                theme === 'dark' ? 'bg-black text-white z-[100]' : 'bg-white text-gray-800 border-r border-gray-200 z-[100]'
             } p-2 sm:p-4 flex flex-col transition-all duration-300 
-                ${!isVisible ? '-translate-x-full' : 'translate-x-0'} z-40 overflow-y-auto scrollbar-hide`}>
-                {/* Top Section with Menu Icon */}
-                <div className="flex items-center space-x-0 justify-between mt-4">
-                    
-                    <div className="hidden md:flex items-center">
+                ${!isVisible ? '-translate-x-full' : 'translate-x-0'} overflow-y-auto scrollbar-hide`}>
+                {/* Top Section with Menu Icon and Logo - Always visible */}
+                <div className="flex items-center space-x-0 justify-between mt-6">
+                    <div className="hidden lg:flex items-center">
                         <img src="/vannipro.png" alt="Vaani.pro Logo" className="w-10 h-8" />    
                         <h1 className="hidden lg:block text-lg sm:text-xl font-bold ml-2 text-[#cc2b5e]">Vaani.pro</h1>
                     </div>
@@ -63,7 +62,7 @@ const Sidebar = ({ isVisible, onToggle, onOpenSettings, onOpenHistory, onNewChat
                             theme === 'dark' ? 'hover:bg-white/10' : 'hover:bg-gray-100'
                         } transition-all duration-300`}
                     >
-                        <FaAlignLeft  className="text-[#cc2b5e] text-xl" />
+                        <FaAlignLeft className="text-[#cc2b5e] text-xl" />
                     </button>
                 </div>
 

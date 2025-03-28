@@ -163,7 +163,10 @@ export const AuthProvider = ({ children }) => {
       const data = await response.json();
       console.log('Login successful, user data:', data);
       
-      setUser(data);
+      setUser({
+        ...data,
+        profilePicture: data.profilePicture // Make sure this is included
+      });
       navigate("/chat");
       return data;
     } catch (error) {

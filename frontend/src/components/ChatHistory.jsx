@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { RiSearchLine, RiCloseLine, RiAddLine } from 'react-icons/ri';
+import { RiSearchLine, RiAddLine } from 'react-icons/ri';
 import axios from 'axios';
 import { IoClose } from 'react-icons/io5';
 import { ThemeContext } from '../App';
