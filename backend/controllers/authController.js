@@ -133,20 +133,18 @@ const googleCallback = async (req, res, next) => {
     }
 
     try {
-      // Set SameSite attribute based on environment
-      const isSecure = process.env.NODE_ENV === 'production';
-      
+      // Always use consistent cookie settings regardless of environment
       res.cookie('jwt', userObj.token, {
         httpOnly: true,
-        secure: isSecure,
-        sameSite: isSecure ? 'none' : 'lax', // Use 'lax' for development
+        secure: true,  // Always true for cross-site
+        sameSite: 'none',  // Required for cross-site cookies
         path: '/',
         maxAge: 30 * 24 * 60 * 60 * 1000
       });
 
       // Enhanced error handling for user info
       const userInfo = encodeURIComponent(JSON.stringify({
-        id: userObj.user._id,
+        _id: userObj.user._id,  // Fix: Use _id to match your data structure
         name: userObj.user.name,
         email: userObj.user.email,
         profilePicture: userObj.user.profilePicture

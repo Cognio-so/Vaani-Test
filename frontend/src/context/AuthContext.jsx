@@ -15,11 +15,16 @@ export const AuthProvider = ({ children }) => {
   const navigate = useNavigate();
 
   const fetchWithCredentials = async (endpoint, options = {}) => {
+    // Get token from localStorage as fallback
+    const token = localStorage.getItem('jwt_token');
+    
     const defaultOptions = {
       credentials: 'include',
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
+        // Add Authorization header as fallback if token exists
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
       },
       ...options
     };
@@ -39,6 +44,7 @@ export const AuthProvider = ({ children }) => {
         if (response.status === 401) {
           console.log('Unauthorized - clearing user state');
           setUser(null);
+          localStorage.removeItem('jwt_token');
         }
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -153,19 +159,20 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      console.log('Attempting login with:', { email });
       const response = await fetchWithCredentials('/auth/login', {
         method: 'POST',
         body: JSON.stringify({ email, password })
       });
       
-      console.log('Login response status:', response.status);
       const data = await response.json();
-      console.log('Login successful, user data:', data);
+      // Store token in localStorage if returned by backend
+      if (data.token) {
+        localStorage.setItem('jwt_token', data.token);
+      }
       
       setUser({
         ...data,
-        profilePicture: data.profilePicture // Make sure this is included
+        profilePicture: data.profilePicture
       });
       navigate("/chat");
       return data;
@@ -226,11 +233,17 @@ export const AuthProvider = ({ children }) => {
     const urlParams = new URLSearchParams(window.location.search);
     const authType = urlParams.get('auth');
     const userInfo = urlParams.get('user');
+    const token = urlParams.get('token'); // Get token from URL params
 
     if (authType === 'google' && userInfo) {
       try {
         const userData = JSON.parse(decodeURIComponent(userInfo));
         setUser(userData);
+        
+        // Store token if available
+        if (token) {
+          localStorage.setItem('jwt_token', token);
+        }
         
         // Clean up URL
         window.history.replaceState({}, document.title, '/chat');

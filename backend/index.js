@@ -31,9 +31,12 @@ app.use(cookieParser());
 app.use(cors({
   origin: process.env.FRONTEND_URL,
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],  // Add OPTIONS for CORS preflight
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With']
 }));
+
+// Add a preflight handler for cookies
+app.options('*', cors());
 
 // Enable trust proxy for Vercel
 app.set("trust proxy", 1);

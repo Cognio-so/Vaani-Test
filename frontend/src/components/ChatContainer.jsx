@@ -305,7 +305,7 @@ const ChatContainer = () => {
 
   const handleReactAgentStreamingRequest = async (message, options = {}) => {
     if (message.role === 'user') {
-        setIsLoading(true);
+      setIsLoading(true);
       setAgentStatus("Initializing research agent...");
       
       const controller = new AbortController();
@@ -318,11 +318,11 @@ const ChatContainer = () => {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-                messages: [...messages, message],
-                model: options.model,
-                thread_id: threadId,
-                file_url: options.file_url,
-                max_search_results: options.deep_research ? 5 : 3
+            messages: [...messages, message],
+            model: options.model,
+            thread_id: threadId,
+            file_url: options.file_url,
+            max_search_results: options.deep_research ? 5 : 3
           }),
           signal
         });
@@ -338,14 +338,26 @@ const ChatContainer = () => {
           id: tempMessageId
         }]);
         
+        // Add buffer for accumulating partial JSON chunks
+        let buffer = '';
+        
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
           
           const chunk = decoder.decode(value);
-          const lines = chunk.split('\n').filter(line => line.trim());
+          buffer += chunk;
           
-          for (const line of lines) {
+          // Try to extract complete JSON objects from buffer
+          let lastNewlineIndex = 0;
+          let newlineIndex;
+          
+          while ((newlineIndex = buffer.indexOf('\n', lastNewlineIndex)) !== -1) {
+            const line = buffer.substring(lastNewlineIndex, newlineIndex).trim();
+            lastNewlineIndex = newlineIndex + 1;
+            
+            if (!line) continue;
+            
             try {
               const data = JSON.parse(line);
               
@@ -367,20 +379,24 @@ const ChatContainer = () => {
               }
             } catch (parseError) {
               console.error("Error parsing stream data:", parseError);
+              // Just log the error and continue, don't break the stream
             }
           }
-            }
-        } catch (error) {
+          
+          // Keep any remaining incomplete data in the buffer
+          buffer = buffer.substring(lastNewlineIndex);
+        }
+      } catch (error) {
         console.error("Error with streaming react-agent:", error);
         setMessages(prev => prev.filter(msg => !msg.isTemporary));
         setMessages(prev => [...prev, {
-            role: 'assistant',
-            content: 'Sorry, I encountered an error with the research agent. Please try again.'
+          role: 'assistant',
+          content: 'Sorry, I encountered an error with the research agent. Please try again.'
         }]);
-        } finally {
-            setIsLoading(false);
+      } finally {
+        setIsLoading(false);
         setAgentStatus("");
-        }
+      }
     }
   };
 
