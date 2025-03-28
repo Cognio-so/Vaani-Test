@@ -574,3 +574,120 @@ body {
   box-shadow: 0 0 30px var(--shadow-color);
 }
 
+/* ChatGPT-style code blocks */
+.message-content pre {
+  background-color: #1e1e1e !important;
+  border-radius: 6px !important;
+  margin: 1rem 0 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  overflow-x: auto !important;
+}
+
+/* Prevent code lines from wrapping */
+.react-syntax-highlighter-line {
+  white-space: pre !important;
+  word-break: normal !important;
+  word-wrap: normal !important;
+}
+
+/* Ensure code container allows horizontal scrolling */
+.react-syntax-highlighter {
+  overflow-x: auto !important; 
+  max-width: 100% !important;
+  font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace !important;
+  line-height: 1.5 !important;
+}
+
+/* Fix mobile code display */
+@media (max-width: 640px) {
+  .message-content pre {
+    margin-left: -0.5rem !important;
+    margin-right: -0.5rem !important;
+    border-radius: 4px !important;
+    width: calc(100% + 1rem) !important;
+  }
+  
+  /* Make sure code is correctly sized */
+  .react-syntax-highlighter {
+    font-size: 0.85em !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .hide-scrollbar-desktop::-webkit-scrollbar {
+    display: none;
+  }
+  .hide-scrollbar-desktop {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+/* Add these new styles for code blocks */
+.code-block {
+  width: 100%;
+  margin: 0 !important;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.code-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #2d2d2d;
+  padding: 0.5rem;
+  font-size: 0.75rem;
+  color: #e4e4e4;
+  border-bottom: 1px solid #444;
+}
+
+.code-lang {
+  font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+}
+
+.code-copy-btn {
+  display: flex;
+  align-items: center;
+  background: transparent;
+  color: #e4e4e4;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.code-copy-btn:hover {
+  background-color: rgba(255,255,255,0.1);
+}
+
+.code-syntax {
+  margin: 0 !important;
+  border-radius: 0 0 6px 6px !important;
+}
+
+/* Override to hide scrollbars on desktop */
+@media (min-width: 768px) {
+  .code-syntax::-webkit-scrollbar {
+    display: none !important;
+  }
+  .code-syntax {
+    -ms-overflow-style: none !important;
+    scrollbar-width: none !important;
+  }
+}
+
+/* Mobile-specific styling for message input */
+@media (max-width: 640px) {
+  form.w-full {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    max-width: 100% !important;
+  }
+  
+  .message-input-container {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    width: 100% !important;
+  }
+}
+

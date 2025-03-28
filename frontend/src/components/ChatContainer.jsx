@@ -886,21 +886,16 @@ const ChatContainer = () => {
                   };
 
                   return !inline && match ? (
-                    <div className="relative group">
-                      <div className="sticky top-2 right-2 float-right flex space-x-2 z-10">
+                    <div className="code-block">
+                      <div className="code-header">
+                        <span className="code-lang">{match[1]}</span>
                         <button 
                           onClick={() => copyToClipboard(codeString)}
-                          className="bg-[#cc2b5e]/80 hover:bg-[#cc2b5e] text-white rounded p-1 text-xs transition-colors"
+                          className="code-copy-btn"
                           title={copied ? "Copied!" : "Copy code"}
                         >
                           {copied ? <TbCopyCheckFilled className="h-4 w-4" /> : <FaRegCopy className="h-4 w-4" />}
-                        </button>
-                        <button 
-                          onClick={() => copyToClipboard(codeString)}
-                          className="bg-[#cc2b5e]/80 hover:bg-[#cc2b5e] text-white rounded p-1 text-xs transition-colors"
-                          title="Edit code"
-                        >
-                          <HiPencil className="h-4 w-4" />
+                          <span className="ml-1">Copy</span>
                         </button>
                       </div>
                       <SyntaxHighlighter
@@ -908,11 +903,11 @@ const ChatContainer = () => {
                         language={match[1]}
                         PreTag="div"
                         customStyle={{
-                          maxWidth: '100%', 
-                          fontSize: '0.75em',
-                          borderRadius: '0.375rem',
-                          marginTop: '0.5rem',
-                          marginBottom: '0.5rem',
+                          margin: '0',
+                          padding: '0.75rem',
+                          background: '#1e1e1e',
+                          fontSize: '14px',
+                          borderRadius: '0 0 6px 6px'
                         }}
                         codeTagProps={{
                           style: {
@@ -920,8 +915,9 @@ const ChatContainer = () => {
                             lineHeight: 1.5
                           }
                         }}
-                        wrapLines={true}
-                        wrapLongLines={true}
+                        wrapLines={false}
+                        wrapLongLines={false}
+                        className="code-syntax"
                         {...props}
                       >
                         {codeString}
@@ -1172,11 +1168,45 @@ const ChatContainer = () => {
         />
 
         <main className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 
-          ${isSidebarVisible ? 'ml-14 sm:ml-16 lg:ml-64' : 'ml-0'}`}>
+          ${isSidebarVisible ? 'ml-16 sm:ml-20 lg:ml-64' : 'ml-0'}`}>
+          
+          {/* Added logo header */}
+          <div className="flex justify-between items-center py-2 px-4 ml-16">
+            {/* Logo that shows only when sidebar is hidden or on small screens */}
+            <div className={`flex items-center ${isSidebarVisible ? 'sm:hidden' : ''}`}>
+              <img src="/vannipro.png" alt="Vaani.pro Logo" className="h-8 sm:h-9" />
+              <h1 className="text-lg sm:text-xl font-bold ml-2 text-[#cc2b5e]">Vaani.pro</h1>
+            </div>
+            
+            {/* Share button that shows when sidebar is visible on non-small screens */}
+            <div className={`${!isSidebarVisible || window.innerWidth < 640 ? 'hidden' : 'flex'} items-center`}>
+              <button className="flex items-center bg-transparent hover:bg-[#cc2b5e]/30 text-[#cc2b5e] px-3 py-1.5 rounded-full text-sm transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
+                </svg>
+                Share
+              </button>
+            </div>
+            
+            {/* User profile picture at top right */}
+            <div className="flex items-center">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full overflow-hidden">
+                <img 
+                  src="/profile-image.jpg" 
+                  alt="Profile" 
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23cc2b5e'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/%3E%3C/svg%3E";
+                  }}
+                />
+              </div>
+            </div>
+          </div>
           
           {hasActiveConversation ? (
             <div className="h-full flex flex-col overflow-hidden">
-              <div className="flex-1 overflow-y-auto px-0 sm:px-2 md:px-4 py-4 sm:py-4"
+              <div className="flex-1 overflow-y-auto px-0 py-4 mt-3" 
                 style={{ 
                   msOverflowStyle: "none", 
                   scrollbarWidth: "none",
@@ -1209,7 +1239,7 @@ const ChatContainer = () => {
                     width: 100%;
                     display: block;
                     overflow-x: auto;
-                    -webkit-overflow-scrolling: touch;
+                    -webkit-overflow-scrolling: ;
                   }
                   
                   @media (min-width: 768px) {
@@ -1344,7 +1374,7 @@ const ChatContainer = () => {
                   }
                 `}</style>
                 
-                <div className="w-full max-w-[95%] xs:max-w-[90%] sm:max-w-2xl md:max-w-3xl lg:max-w-4xl mx-auto">
+                <div className="w-full max-w-[95%] xs:max-w-[90%] sm:max-w-3xl md:max-w-3xl mx-auto">
                   {messages.map((msg, index) => {
                     const displayContent = msg.role === 'assistant' 
                       ? msg.content 
@@ -1353,32 +1383,24 @@ const ChatContainer = () => {
                     return (
                       <div 
                         key={index} 
-                        className={`${msg.role === 'user' ? 'ml-auto' : 'mr-auto'} mb-4 max-w-[95%] xs:max-w-[80%] sm:max-w-[85%]`}>
-                        <div className={`flex items-start ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
-                          <div className={`flex-shrink-0 ${msg.role === 'user' ? 'ml-2' : 'mr-2'} mt-1`}>
-                            {msg.role === 'assistant' ? (
-                              <div className="w-6 h-6 rounded-full bg-[#cc2b5e] flex items-center justify-center">
-                                <HiSparkles className="w-4 h-4 text-white" />
-                              </div>
-                            ) : (
-                              <div className="w-6 h-6 rounded-full bg-[#cc2b5e] flex items-center justify-center">
-                                <FaUser className="w-3 h-3 text-white" />
-                              </div>
-                            )}
-                          </div>
-                          
-                          <div className={`rounded-xl p-2 sm:p-3 overflow-hidden ${
-                            msg.role === 'user' 
-                              ? theme === 'dark'
-                                ? 'bg-white/10 backdrop-blur-sm border border-white/20 shadow-sm text-white' 
-                                : 'bg-gray-200 border border-gray-300 shadow-sm text-gray-800'
-                              : theme === 'dark'
-                                ? 'bg-white/5 backdrop-blur-sm border border-white/10 shadow-sm text-white'
-                                : 'bg-gray-100 border border-gray-200 shadow-sm text-gray-800'
-                          }`}>
+                        className={`mb-6 ${index === 0 ? 'mt-5' : ''} w-full flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                        {msg.role === 'user' ? (
+                          <div className={`${
+                            theme === 'dark'
+                              ? 'bg-white/30 text-white' 
+                              : 'bg-black/20 text-white'
+                          } rounded-3xl p-3 px-4 overflow-hidden inline-block`} style={{maxWidth: '85%'}}>
                             <MessageContent content={displayContent} />
                           </div>
-                        </div>
+                        ) : (
+                          <div className={`${
+                            theme === 'dark'
+                              ? 'text-white' 
+                              : 'text-gray-800'
+                          } rounded-xl p-0 overflow-hidden inline-block w-full max-w-[95%] xs:max-w-[90%] sm:max-w-3xl md:max-w-3xl`}>
+                            <MessageContent content={displayContent} />
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -1387,8 +1409,8 @@ const ChatContainer = () => {
                   {isGeneratingMedia && <MediaGenerationIndicator />}
                   
                   {isLoading && !isGeneratingMedia && !messages.some(msg => msg.isTemporary) && !mediaType && (
-                    <div className="max-w-[95%] mr-auto mb-4">
-                      <div className={`${theme === 'dark' ? 'bg-white/10 text-white' : 'bg-gray-100 text-gray-800'} rounded-xl p-2 sm:p-3`}>
+                    <div className="mb-4 flex justify-start">
+                      <div className={`${theme === 'dark' ? 'text-white' : 'text-gray-800'} rounded-full p-2 sm:p-3 inline-block`}>
                         <div className="flex items-center">
                           <div className="flex items-center space-x-2">
                             <div className="w-1 h-1 bg-[#cc2b5e] rounded-full animate-pulse"></div>
@@ -1402,7 +1424,7 @@ const ChatContainer = () => {
                 </div>
               </div>
               
-              <div className="mt-auto pb-2 sm:pb-4 px-2 sm:px-4 w-full">
+              <div className="mt-auto pb-3 w-full px-0">
                 <MessageInput 
                   onSendMessage={handleSendMessage} 
                   isLoading={isLoading}
