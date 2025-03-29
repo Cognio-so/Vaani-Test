@@ -684,7 +684,7 @@ body {
 /* Fixed mobile input styles */
 @media (max-width: 767px) {
   .messages-container {
-    padding-bottom: 70px !important; /* Reduced from 80px */
+    padding-bottom: 60px !important; /* Reduced space for input */
   }
   
   .mobile-input-container {
@@ -694,7 +694,7 @@ body {
     right: 0;
     z-index: 50;
     background: var(--bg-primary);
-    padding: 4px 8px 8px; /* Reduced from 8px 8px 12px */
+    padding: 4px 8px 6px;
     box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
   }
 }
