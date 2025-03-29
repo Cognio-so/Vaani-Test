@@ -499,10 +499,6 @@ tr:nth-child(even) {
 :root {
   --primary-color: #cc2b5e;
   --secondary-color: #753a88;
-  --sat: env(safe-area-inset-top, 0px);
-  --sar: env(safe-area-inset-right, 0px);
-  --sab: env(safe-area-inset-bottom, 0px);
-  --sal: env(safe-area-inset-left, 0px);
 }
 
 .dark-theme {
@@ -685,51 +681,21 @@ body {
   }
 }
 
-/* Mobile input styles based on ChatGPT/Grok implementation */
+/* Fixed mobile input styles */
 @media (max-width: 767px) {
-  /* Container for messages needs more bottom space */
   .messages-container {
-    padding-bottom: 120px !important; 
+    padding-bottom: 80px !important; /* Space for input */
   }
   
-  /* Input container styling similar to ChatGPT/Grok */
   .mobile-input-container {
-    position: fixed !important; /* Fixed position like ChatGPT/Grok use */
-    bottom: 0 !important;
+    position: sticky;
+    bottom: 0;
     left: 0;
     right: 0;
-    z-index: 100; /* Higher z-index to ensure it's always on top */
+    z-index: 50;
     background: var(--bg-primary);
-    padding: 12px 12px 40px !important; /* More horizontal padding like ChatGPT */
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 -2px 15px rgba(0, 0, 0, 0.15);
-    
-    /* Safe area inset for iOS devices (like ChatGPT uses) */
-    padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px)) !important;
-  }
-  
-  /* Make the input box itself more touch-friendly */
-  .mobile-input-container textarea {
-    padding-top: 10px !important;
-    padding-bottom: 10px !important;
-    min-height: 45px !important;
-    margin-bottom: 35px !important;
-  }
-  
-  /* ChatGPT/Grok style button positioning */
-  .mobile-input-container .absolute.bottom-1 {
-    bottom: calc(14px + env(safe-area-inset-bottom, 0px)) !important;
-  }
-  
-  /* Add iOS viewport height fix (used by both ChatGPT and Grok) */
-  @supports (-webkit-touch-callout: none) {
-    .messages-container {
-      padding-bottom: 140px !important; /* Even more space for iOS */
-    }
-    
-    .mobile-input-container {
-      padding-bottom: calc(50px + env(safe-area-inset-bottom, 20px)) !important;
-    }
+    padding: 8px 8px 12px;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
   }
 }
 

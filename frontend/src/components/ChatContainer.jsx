@@ -804,7 +804,7 @@ const ChatContainer = () => {
           
           {hasActiveConversation ? (
             <div className="flex-1 flex flex-col overflow-hidden h-full">
-              <div className="messages-container flex-1 overflow-y-auto px-0 pt-16 pb-4 scroll-smooth min-h-0"
+              <div className="flex-1 overflow-y-auto px-0 pt-16 pb-4 scroll-smooth min-h-0"
                 style={{ 
                   msOverflowStyle: "none", 
                   scrollbarWidth: "none",
@@ -889,8 +889,8 @@ const ChatContainer = () => {
                 </div>
               </div>
               
-              {/* Apply mobile-input-container class conditionally for sticky positioning */}
-              <div className="md:px-4 md:xs:px-6 md:sm:px-8 md:pb-3 md:sm:pb-4 md:mt-auto md:mb-3 md:sm:mb-4 mobile-input-container"> {/* Apply sticky container class directly, remove mobile padding/margin */}
+              {/* Fixed position for input when conversation is active */}
+              <div className="w-full flex-shrink-0 px-4 xs:px-6 sm:px-8 pb-3 sm:pb-4 z-20 mt-auto mb-3 sm:mb-4">
                 <MessageInput 
                   onSendMessage={handleSendMessage} 
                   isLoading={isLoading}
@@ -955,9 +955,8 @@ const ChatContainer = () => {
                 </div>
               </div>
               
-              {/* Apply mobile-input-container class conditionally for sticky positioning */}
               {/* Keep the bottom input for mobile view only */}
-              <div className="md:hidden mobile-input-container"> {/* Apply sticky container class directly */}
+              <div className="md:hidden w-full flex-shrink-0 px-4 xs:px-6 sm:px-8 pb-3 sm:pb-4 z-20 mt-auto mb-3 sm:mb-4">
                 <MessageInput 
                   onSendMessage={handleSendMessage}
                   isLoading={isLoading}
