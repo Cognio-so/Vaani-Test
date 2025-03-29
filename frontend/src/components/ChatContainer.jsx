@@ -804,7 +804,7 @@ const ChatContainer = () => {
           
           {hasActiveConversation ? (
             <div className="flex-1 flex flex-col overflow-hidden h-full">
-              <div className="flex-1 overflow-y-auto px-0 pt-16 pb-4 scroll-smooth min-h-0"
+              <div className="messages-container flex-1 overflow-y-auto px-0 pt-16 pb-4 scroll-smooth min-h-0"
                 style={{ 
                   msOverflowStyle: "none", 
                   scrollbarWidth: "none",
@@ -889,7 +889,8 @@ const ChatContainer = () => {
                 </div>
               </div>
               
-              <div className="w-full flex-shrink-0 px-4 xs:px-6 sm:px-8 pb-3 sm:pb-4 z-20 mt-auto mb-3 sm:mb-4">
+              {/* Apply mobile-input-container class conditionally for sticky positioning */}
+              <div className="md:px-4 md:xs:px-6 md:sm:px-8 md:pb-3 md:sm:pb-4 md:mt-auto md:mb-3 md:sm:mb-4 mobile-input-container"> {/* Apply sticky container class directly, remove mobile padding/margin */}
                 <MessageInput 
                   onSendMessage={handleSendMessage} 
                   isLoading={isLoading}
@@ -903,7 +904,7 @@ const ChatContainer = () => {
             </div>
           ) : (
             <div className="flex-1 flex flex-col overflow-hidden h-full">
-              {/* Welcome content - preserved */}
+              {/* Welcome content with centered input for empty state */}
               <div className="flex-1 overflow-y-auto px-4 pt-16 pb-4 flex flex-col items-center justify-center -mt-6 sm:-mt-12">
                 <div className="items-center text-center w-full transition-all duration-300 
                   max-w-sm sm:max-w-xl md:max-w-2xl lg:max-w-3xl">
@@ -938,10 +939,25 @@ const ChatContainer = () => {
                       </motion.div>
                     ))}
                   </div>
+                  
+                  {/* Add message input in the center for desktop only, hidden on mobile */}
+                  <div className="hidden md:block w-full max-w-3xl mx-auto mt-8">
+                    <MessageInput 
+                      onSendMessage={handleSendMessage}
+                      isLoading={isLoading}
+                      setIsLoading={setIsLoading}
+                      onMediaRequested={handleMediaRequested}
+                      onModelChange={handleModelChange}
+                      onOptionsChange={handleInputOptionsChange}
+                      selectedModel={model}
+                    />
+                  </div>
                 </div>
               </div>
               
-              <div className="w-full flex-shrink-0 px-4 xs:px-6 sm:px-8 pb-3 sm:pb-4 z-20 mt-auto mb-3 sm:mb-4">
+              {/* Apply mobile-input-container class conditionally for sticky positioning */}
+              {/* Keep the bottom input for mobile view only */}
+              <div className="md:hidden mobile-input-container"> {/* Apply sticky container class directly */}
                 <MessageInput 
                   onSendMessage={handleSendMessage}
                   isLoading={isLoading}
