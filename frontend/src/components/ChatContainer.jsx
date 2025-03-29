@@ -162,7 +162,7 @@ const ChatContainer = () => {
         const tempMessageId = Date.now();
         setMessages(prev => [...prev, {
           role: 'assistant',
-          content: 'Researching...',
+          content: '',
           isTemporary: true,
           id: tempMessageId
         }]);
@@ -396,10 +396,8 @@ const ChatContainer = () => {
         
         // Only clear loading state if we actually found media content
         if (containsImageUrl || containsMusicUrl) {
-          console.log("Media URL detected in:", content);
-          
-          // DO NOT clear states here - let the media display remain
-          // The animation will be replaced by actual media when it loads
+          console.log("Media URL detected, clearing loading states");
+          // DO NOT clear states here - we'll let onMediaLoaded handle this
         }
       }
     }
@@ -776,13 +774,13 @@ const ChatContainer = () => {
         />
 
         <main className={`flex-1 flex flex-col h-full overflow-hidden transition-all duration-300 
-          ${isSidebarVisible ? 'ml-14 sm:ml-16 lg:ml-64' : 'ml-0'}`}>
+          ${isSidebarVisible ? 'lg:ml-64 sm:ml-16 ml-14' : 'ml-0'}`}>
           
           {/* Invisible spacing container - only visible in responsive mode */}
           <div className="md:hidden h-16 sm:h-20 flex-shrink-0"></div>
           
           {/* Floating logo - positioned absolutely */}
-          <div className={`absolute top-4 left-6 z-10 flex items-center ${isSidebarVisible ? 'sm:hidden' : ''} ml-24`}>
+          <div className={`absolute top-4 left-4 z-10 flex items-center ${isSidebarVisible ? 'sm:hidden' : 'ml-16 sm:ml-20'}`}>
             <img src="/vannipro.png" alt="Vaani.pro Logo" className="h-6 sm:h-8" />
             <h1 className="text-sm sm:text-lg font-bold ml-2 text-[#cc2b5e]">Vaani.pro</h1>
           </div>
@@ -841,10 +839,14 @@ const ChatContainer = () => {
                               forceImageDisplay={true} 
                               forceAudioDisplay={true}
                               onMediaLoaded={() => {
-                                // Immediately clear loading states when media loads
-                                setIsGeneratingMedia(false);
-                                setGeneratingMediaType(null);
-                                setMediaType(null);
+                                console.log("Media loaded, clearing states");
+                                // Only clear if we're actually displaying media
+                                if (isGeneratingMedia) {
+                                  setIsLoading(false);
+                                  setIsGeneratingMedia(false);
+                                  setGeneratingMediaType(null);
+                                  setMediaType(null);
+                                }
                               }}
                             />
                           </div>
@@ -854,24 +856,33 @@ const ChatContainer = () => {
                   })}
                   <div ref={messagesEndRef} />
                   
-                  {isGeneratingMedia && 
-                    (mediaType === 'image' || mediaType === 'music') && 
-                    <MediaLoadingAnimation mediaType={mediaType} />
-                  }
-                  
-                  {isGeneratingMedia && 
-                    !mediaType && 
-                    <MediaGenerationIndicator generatingMediaType={generatingMediaType} />
-                  }
-                  
-                  {isLoading && !isGeneratingMedia && !mediaType && agentStatus === "" && (
-                    <div className="mb-4 flex justify-start">
-                      <div className= 'rounded-2xl p-3 shadow-md inline-block'>
-                        <div className="flex items-center space-x-3">
-                          <span className="text-xs opacity-80 animate-blink">⚪</span>
+                  {/* Loading indicators - only one will show at a time */}
+                  {isLoading && (
+                    <>
+                      {isGeneratingMedia ? (
+                        // --- PRIORITY 1: Media Generation ---
+                        // Always show MediaLoadingAnimation if isGeneratingMedia is true
+                        <MediaLoadingAnimation mediaType={mediaType || generatingMediaType} />
+                      ) : agentStatus && (useAgent || deepResearch) ? (
+                        // --- PRIORITY 2: Agent Status (only if not generating media) ---
+                        <div className="mb-4 flex justify-start">
+                          <div className={`rounded-2xl p-3 ${theme === 'dark' ? 'bg-white/[0.05] backdrop-blur-xl border border-white/20' : 'bg-gray-100'} shadow-md inline-block`}>
+                            <div className="flex items-center space-x-3">
+                              <span className="text-xs opacity-80">{agentStatus}</span>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
+                      ) : (
+                        // --- PRIORITY 3: Normal Conversation Loading (if not generating media and no agent status) ---
+                        <div className="mb-4 flex justify-start">
+                          <div className='rounded-2xl p-3 shadow-md inline-block'>
+                            <div className="flex items-center space-x-3">
+                              <span className="text-xs opacity-80 animate-blink">⚪</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               </div>

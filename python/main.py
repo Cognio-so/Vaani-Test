@@ -678,7 +678,7 @@ async def react_agent_search_streaming(request: ReactAgentRequest):
             model_mapping = {
                 "gemini-1.5-flash": "google/gemini-1.5-flash",
                 "gpt-4o-mini": "openai/gpt-4o-mini",
-                "gpt-4o": "openai/gpt-4o",  # Fixed duplicate with unique value
+                "gpt-4o": "openai/gpt-4o",
                 "claude-3-haiku-20240307": "anthropic/claude-3-haiku-20240307",
                 "llama-3.3-70b-versatile": "groq/llama-3.3-70b-versatile",
                 "mixtral-8x7b-32768": "groq/mixtral-8x7b-32768"
@@ -693,34 +693,39 @@ async def react_agent_search_streaming(request: ReactAgentRequest):
                 max_search_results=request.max_search_results
             )
             
-            # Add callback for status updates
-            class StatusCallback:
-                async def on_agent_action(self, action_type, description):
-                    status_update = {"type": "status", "status": f"{action_type}: {description}"}
-                    yield json.dumps(status_update) + "\n"
-                    await asyncio.sleep(0.1)
-            
-            status_callback = StatusCallback()
-            
-            # Update config with callback
-            config_dict = {"configurable": {
-                "thread_id": thread_id, 
-                "configuration": config,
-                "callback": status_callback
-            }}
-            
             # Create a task to run the react_graph.ainvoke call
             async def run_react_agent():
-                return await react_graph.ainvoke(input_state, config_dict)
+                return await react_graph.ainvoke(input_state, {"configurable": {
+                    "thread_id": thread_id, 
+                    "configuration": config
+                }})
             
             task = asyncio.create_task(run_react_agent())
             
-            # Send real-time status updates while the task runs
-            yield json.dumps({"type": "status", "status": "Researching..."}) + "\n"
+            # Send improved status updates during research process
+            status_messages = [
+                "Searching for information...",
+                "Analyzing relevant data...",
+                "Gathering reliable sources...",
+                "Processing information...",
+                "Synthesizing findings..."
+            ]
+            
+            status_index = 0
+            last_status_time = time.time()
             
             # Then rely on actual status updates from the agent instead of fake ones
             while not task.done():
                 try:
+                    # Check if it's time to update status (every 2-3 seconds)
+                    current_time = time.time()
+                    if current_time - last_status_time >= 2.5:
+                        # Send the next status update
+                        yield json.dumps({"type": "status", "status": status_messages[status_index]}) + "\n"
+                        # Move to next status message in rotation
+                        status_index = (status_index + 1) % len(status_messages)
+                        last_status_time = current_time
+                    
                     # Wait a short time before checking again
                     await asyncio.wait_for(asyncio.shield(task), 0.5)
                 except asyncio.TimeoutError:
@@ -729,6 +734,9 @@ async def react_agent_search_streaming(request: ReactAgentRequest):
             
             # Get result from completed task
             result = await task
+            
+            # Final status update
+            yield json.dumps({"type": "status", "status": "Finalizing results..."}) + "\n"
             
             # Extract the assistant's response (keep existing code)
             if "messages" in result and result["messages"]:

@@ -173,11 +173,11 @@ const MessageInput = ({ onSendMessage, isLoading, setIsLoading, onMediaRequested
                 theme === 'dark' 
                   ? 'bg-white/[0.2] backdrop-blur-xl text-white shadow-[0_0_15px_rgba(204,43,94,0.3)] hover:shadow-[0_0_20px_rgba(204,43,94,0.5)]' 
                   : 'bg-gray-100 text-gray-800 shadow-md hover:shadow-lg'
-            } px-2 sm:px-4 pt-2 sm:pt-3 pb-8 sm:pb-10 md:mb-0 mb-2`}>
+            } px-2 sm:px-4 pt-2 sm:pt-3 pb-2 sm:pb-3 md:mb-0 mb-2`}>
                 <textarea
                     ref={textareaRef}
                     placeholder='Ask me anything...'
-                    className={`relative w-full py-2 mb-1 sm:mb-4 bg-transparent outline-none text-sm sm:text-lg md:text-base resize-none overflow-hidden scrollbar-hide min-h-[40px] sm:min-h-[48px] ${
+                    className={`w-full py-2 mb-8 bg-transparent outline-none text-sm sm:text-base resize-none overflow-y-auto scrollbar-hide min-h-[40px] sm:min-h-[48px] max-h-32 sm:max-h-40 ${
                         theme === 'dark' ? 'placeholder-gray-400' : 'placeholder-gray-500'
                     }`}
                     rows={1}
@@ -193,66 +193,68 @@ const MessageInput = ({ onSendMessage, isLoading, setIsLoading, onMediaRequested
                     }}
                 />
                 
-                <div className="absolute left-1 sm:left-3 bottom-1 sm:bottom-2 flex items-center space-x-1 sm:space-x-3">
-                    <button 
-                        type="button"
-                        className={`${
-                            theme === 'dark' 
-                              ? 'text-[#cc2b5e] hover:text-[#bd194d]' 
-                              : 'text-[#cc2b5e] hover:text-[#bd194d]'
-                        } transition-all text-xl sm:text-2xl md:text-2xl p-1 sm:p-1.5 hover:bg-white/10 rounded-full relative`}
-                        onClick={toggleModelSelector}
-                    >
-                        <ModelIcon />
-                    </button>
-                    
-                    <button 
-                        type="button"
-                        className={`${
-                            theme === 'dark' 
-                              ? 'text-[#cc2b5e] hover:text-[#bd194d]' 
-                              : 'text-[#cc2b5e] hover:text-[#bd194d]'
-                        } transition-all text-xl sm:text-2xl md:text-2xl p-1 sm:p-1.5 hover:bg-white/10 rounded-full flex items-center ${deepResearch ? 'bg-white/20' : ''}`}
-                        title={deepResearch ? "Web research mode enabled - I'll search for up-to-date information" : "Web research mode disabled"}
-                        onClick={toggleDeepResearch}
-                    >
-                        <CiGlobe />
-                        {deepResearch && <span className="ml-1 text-xs whitespace-nowrap text-[#cc2b5e] font-medium">Web Research</span>}
-                    </button>
-                    <button 
-                        type="button"
-                        className={`${
-                            theme === 'dark' 
-                              ? 'text-[#cc2b5e] hover:text-[#bd194d]' 
-                              : 'text-[#cc2b5e] hover:text-[#bd194d]'
-                        } transition-all text-xl sm:text-2xl md:text-2xl p-1 sm:p-1.5 hover:bg-white/10 rounded-full flex items-center ${useAgent ? 'bg-white/10' : ''}`}
-                        title={useAgent ? "AI agent enabled" : "AI agent disabled"}
-                        onClick={toggleAgentChat}
-                    >
-                        <FaLightbulb />
-                        {useAgent && <span className="ml-1 text-xs whitespace-nowrap text-[#cc2b5e] font-medium">AI Agent</span>}
-                    </button>
-                </div>
+                <div className="absolute bottom-1 sm:bottom-1.5 left-1 sm:left-3 right-1 sm:right-3 flex justify-between items-center">
+                    <div className="flex items-center space-x-1 sm:space-x-2">
+                        <button 
+                            type="button"
+                            className={`${
+                                theme === 'dark' 
+                                  ? 'text-[#cc2b5e] hover:text-[#bd194d]' 
+                                  : 'text-[#cc2b5e] hover:text-[#bd194d]'
+                            } transition-all text-lg sm:text-xl p-1 hover:bg-white/10 rounded-full relative`}
+                            onClick={toggleModelSelector}
+                        >
+                            <ModelIcon />
+                        </button>
+                        
+                        <button 
+                            type="button"
+                            className={`${
+                                theme === 'dark' 
+                                  ? 'text-[#cc2b5e] hover:text-[#bd194d]' 
+                                  : 'text-[#cc2b5e] hover:text-[#bd194d]'
+                            } transition-all text-lg sm:text-xl p-1 hover:bg-white/10 rounded-full flex items-center ${deepResearch ? 'bg-white/20' : ''}`}
+                            title={deepResearch ? "Web research mode enabled" : "Web research mode disabled"}
+                            onClick={toggleDeepResearch}
+                        >
+                            <CiGlobe />
+                            {deepResearch && <span className="ml-1 text-[10px] sm:text-xs hidden xs:inline whitespace-nowrap text-[#cc2b5e] font-medium">Web</span>}
+                        </button>
+                        <button 
+                            type="button"
+                            className={`${
+                                theme === 'dark' 
+                                  ? 'text-[#cc2b5e] hover:text-[#bd194d]' 
+                                  : 'text-[#cc2b5e] hover:text-[#bd194d]'
+                            } transition-all text-lg sm:text-xl p-1 hover:bg-white/10 rounded-full flex items-center ${useAgent ? 'bg-white/10' : ''}`}
+                            title={useAgent ? "AI agent enabled" : "AI agent disabled"}
+                            onClick={toggleAgentChat}
+                        >
+                            <FaLightbulb />
+                            {useAgent && <span className="ml-1 text-[10px] sm:text-xs hidden xs:inline whitespace-nowrap text-[#cc2b5e] font-medium">Agent</span>}
+                        </button>
+                    </div>
 
-                <div className="absolute right-2 sm:right-3 md:right-4 bottom-2 sm:bottom-3 md:bottom-4 flex items-center space-x-2 sm:space-x-3 md:space-x-4">
-                    <input 
-                        type="file" 
-                        id="file-upload" 
-                        className="hidden" 
-                        ref={fileInputRef}
-                        onChange={handleFileChange}
-                    />
-                    <label 
-                        htmlFor="file-upload" 
-                        className={`${
-                            theme === 'dark' 
-                              ? 'text-[#cc2b5e] hover:text-[#bd194d]' 
-                              : 'text-[#cc2b5e] hover:text-[#bd194d]'
-                        } transition-all text-xl sm:text-2xl md:text-2xl p-1 sm:p-1.5 hover:bg-white/10 rounded-full cursor-pointer ${uploadedFile ? 'bg-white/10' : ''}`}
-                        title={uploadedFile ? `File attached: ${uploadedFile}` : "Attach file"}
-                    >
-                        <MdAttachFile />
-                    </label>
+                    <div className="flex items-center">
+                        <input 
+                            type="file" 
+                            id="file-upload" 
+                            className="hidden" 
+                            ref={fileInputRef}
+                            onChange={handleFileChange}
+                        />
+                        <label 
+                            htmlFor="file-upload" 
+                            className={`${
+                                theme === 'dark' 
+                                  ? 'text-[#cc2b5e] hover:text-[#bd194d]' 
+                                  : 'text-[#cc2b5e] hover:text-[#bd194d]'
+                            } transition-all text-lg sm:text-xl p-1 hover:bg-white/10 rounded-full cursor-pointer ${uploadedFile ? 'bg-white/10' : ''}`}
+                            title={uploadedFile ? `File attached: ${uploadedFile}` : "Attach file"}
+                        >
+                            <MdAttachFile />
+                        </label>
+                    </div>
                 </div>
                 
                 {/* Model Selector Dropdown */}
@@ -262,7 +264,7 @@ const MessageInput = ({ onSendMessage, isLoading, setIsLoading, onMediaRequested
                             className="fixed inset-0 bg-transparent z-10"
                             onClick={() => setIsModelSelectorOpen(false)}
                         />
-                        <div className={`absolute left-0 bottom-full mb-2 w-[240px] ${
+                        <div className={`absolute left-0 bottom-full mb-2 w-[200px] sm:w-[240px] ${
                             theme === 'dark'
                               ? 'bg-black/90 backdrop-blur-xl shadow-[0_0_15px_rgba(204,43,94,0.3)] border border-[#cc2b5e]/20'
                               : 'bg-white shadow-lg border border-gray-200'

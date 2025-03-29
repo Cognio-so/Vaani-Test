@@ -17,7 +17,8 @@ export default {
       animation: {
         'shimmer': 'shimmer 2s infinite linear',
         'sound-wave': 'soundWave 1.5s infinite ease-in-out',
-        'bounce': 'bounce 1s infinite'
+        'bounce': 'bounce 1s infinite',
+        'blink': 'blink 1.5s infinite ease-in-out'
       },
       keyframes: {
         shimmer: {
@@ -27,6 +28,10 @@ export default {
         soundWave: {
           '0%, 100%': { transform: 'scaleY(1)' },
           '50%': { transform: 'scaleY(0.5)' }
+        },
+        blink: {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0.3' }
         }
       }
     },
