@@ -776,11 +776,11 @@ const ChatContainer = () => {
         <main className={`flex-1 flex flex-col h-full overflow-hidden transition-all duration-300 
           ${isSidebarVisible ? 'lg:ml-64 sm:ml-16 ml-14' : 'ml-0'}`}>
           
-          {/* Invisible spacing container - Pushes content down on mobile */}
-          <div className="md:hidden h-16 sm:h-20 flex-shrink-0"></div>
+          {/* Invisible spacing container - Make it smaller on mobile */}
+          <div className="md:hidden h-10 sm:h-14 flex-shrink-0"></div>
           
-          {/* Centered Mobile Header */}
-          <div className="absolute top-0 left-0 right-0 h-16 sm:h-20 flex items-center justify-center md:hidden z-20 pointer-events-none">
+          {/* Centered Mobile Header - Position it better */}
+          <div className="absolute top-0 left-0 right-0 h-14 sm:h-16 flex items-center justify-center md:hidden z-20 pointer-events-none">
             <div className="flex items-center pointer-events-auto"> {/* Allow clicking logo if needed */}
                 <img src="/vannipro.png" alt="Vaani.pro Logo" className="h-6 sm:h-8" />
                 <h1 className="text-sm sm:text-lg font-bold ml-2 text-[#cc2b5e]">Vaani.pro</h1>
@@ -804,7 +804,7 @@ const ChatContainer = () => {
           
           {hasActiveConversation ? (
             <div className="flex-1 flex flex-col overflow-hidden h-full">
-              <div className="flex-1 overflow-y-auto px-0 pt-16 pb-4 scroll-smooth min-h-0"
+              <div className="flex-1 overflow-y-auto px-0 pt-12 pb-4 scroll-smooth min-h-0"
                 style={{ 
                   msOverflowStyle: "none", 
                   scrollbarWidth: "none",
@@ -889,8 +889,8 @@ const ChatContainer = () => {
                 </div>
               </div>
               
-              {/* For active conversation - Change this container */}
-              <div className="w-full flex-shrink-0 px-4 xs:px-6 sm:px-8 pb-1 pt-1 z-20 sticky bottom-0 bg-[#0a0a0a]">
+              {/* For active conversation - Reduce padding on mobile */}
+              <div className="w-full flex-shrink-0 px-3 xs:px-4 sm:px-8 pb-2 mb-1 sm:mb-2 z-20 sticky bottom-0 bg-[#0a0a0a]">
                 <MessageInput 
                   onSendMessage={handleSendMessage} 
                   isLoading={isLoading}
@@ -905,14 +905,14 @@ const ChatContainer = () => {
           ) : (
             <div className="flex-1 flex flex-col overflow-hidden h-full">
               {/* Welcome content with centered input for empty state */}
-              <div className="flex-1 overflow-y-auto px-4 pt-16 pb-4 flex flex-col items-center justify-center -mt-6 sm:-mt-12">
+              <div className="flex-1 overflow-y-auto px-4 pt-10 pb-2 flex flex-col items-center justify-center -mt-6 sm:-mt-8">
                 <div className="items-center text-center w-full transition-all duration-300 
                   max-w-sm sm:max-w-xl md:max-w-2xl lg:max-w-3xl">
-                  <h1 className="text-2xl sm:text-3xl font-bold text-[#cc2b5e]">Welcome to Vaani.pro</h1>
-                  <p className="text-[#cc2b5e] text-base sm:text-xl mt-2">How may I help you?</p>
+                  <h1 className="text-xl sm:text-3xl font-bold text-[#cc2b5e]">Welcome to Vaani.pro</h1>
+                  <p className="text-[#cc2b5e] text-sm sm:text-xl mt-1 sm:mt-2">How may I help you?</p>
                   
-                  {/* Preserved predefined prompts */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-5xl mx-auto mt-6 sm:mt-8 px-2">
+                  {/* Preserved predefined prompts - with reduced vertical spacing */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 max-w-5xl mx-auto mt-4 sm:mt-8 px-2">
                     {predefinedPrompts.map((item) => (
                       <motion.div
                         key={item.id}
@@ -941,7 +941,7 @@ const ChatContainer = () => {
                   </div>
                   
                   {/* Add message input in the center for desktop only, hidden on mobile */}
-                  <div className="hidden md:block w-full max-w-3xl mx-auto mt-8">
+                  <div className="hidden md:block w-full max-w-3xl mx-auto mt-6 sm:mt-8">
                     <MessageInput 
                       onSendMessage={handleSendMessage}
                       isLoading={isLoading}
@@ -955,8 +955,8 @@ const ChatContainer = () => {
                 </div>
               </div>
               
-              {/* Keep the bottom input for mobile view only */}
-              <div className="md:hidden w-full flex-shrink-0 px-4 xs:px-6 sm:px-8 pb-1 pt-1 z-20 sticky bottom-0 bg-[#0a0a0a]">
+              {/* For empty state - Also reduce padding */}
+              <div className="md:hidden w-full flex-shrink-0 px-3 xs:px-4 sm:px-8 pb-2 mb-1 sm:mb-2 z-20 sticky bottom-0 bg-[#0a0a0a]">
                 <MessageInput 
                   onSendMessage={handleSendMessage}
                   isLoading={isLoading}

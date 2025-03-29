@@ -168,16 +168,16 @@ const MessageInput = ({ onSendMessage, isLoading, setIsLoading, onMediaRequested
     const ModelIcon = currentModel ? currentModel.icon : RiSparkling2Fill;
 
     return (
-        <form onSubmit={handleSendMessage} className='w-full max-w-full xs:max-w-[94%] sm:max-w-[90%] md:max-w-3xl mx-auto'>
+        <form onSubmit={handleSendMessage} className="w-full max-w-full mx-auto">
             <div className={`relative rounded-lg sm:rounded-xl ${
                 theme === 'dark' 
-                  ? 'bg-white/[0.2] backdrop-blur-xl text-white shadow-[0_0_15px_rgba(204,43,94,0.3)] hover:shadow-[0_0_20px_rgba(204,43,94,0.5)]' 
-                  : 'bg-gray-100 text-gray-800 shadow-md hover:shadow-lg'
-            } px-2 sm:px-4 pt-2 sm:pt-3 pb-2 sm:pb-3 md:mb-0 mb-2`}>
+                  ? 'bg-white/[0.2] backdrop-blur-xl text-white shadow-[0_0_15px_rgba(204,43,94,0.3)]' 
+                  : 'bg-gray-100 text-gray-800 shadow-md'
+            } px-2 xs:px-3 sm:px-4 py-2`}>
                 <textarea
                     ref={textareaRef}
                     placeholder='Ask me anything...'
-                    className={`w-full py-2 mb-8 bg-transparent outline-none text-sm sm:text-base resize-none overflow-y-auto scrollbar-hide min-h-[40px] sm:min-h-[48px] max-h-32 sm:max-h-40 ${
+                    className={`w-full py-1 xs:py-2 mb-6 xs:mb-7 sm:mb-8 bg-transparent outline-none text-xs xs:text-sm sm:text-base resize-none overflow-y-auto scrollbar-hide min-h-[36px] xs:min-h-[40px] sm:min-h-[48px] max-h-28 xs:max-h-32 sm:max-h-40 ${
                         theme === 'dark' ? 'placeholder-gray-400' : 'placeholder-gray-500'
                     }`}
                     rows={1}
@@ -193,15 +193,15 @@ const MessageInput = ({ onSendMessage, isLoading, setIsLoading, onMediaRequested
                     }}
                 />
                 
-                <div className="absolute bottom-1 sm:bottom-1.5 left-1 sm:left-3 right-1 sm:right-3 flex justify-between items-center">
-                    <div className="flex items-center space-x-1 sm:space-x-2">
+                <div className="absolute bottom-1 xs:bottom-1.5 sm:bottom-2 left-1 xs:left-2 sm:left-3 right-1 xs:right-2 sm:right-3 flex justify-between items-center">
+                    <div className="flex items-center gap-0.5 xs:gap-1 sm:gap-2">
                         <button 
                             type="button"
                             className={`${
                                 theme === 'dark' 
                                   ? 'text-[#cc2b5e] hover:text-[#bd194d]' 
                                   : 'text-[#cc2b5e] hover:text-[#bd194d]'
-                            } transition-all text-lg sm:text-xl p-1 hover:bg-white/10 rounded-full relative`}
+                            } transition-all text-base xs:text-lg sm:text-xl p-0.5 xs:p-1 hover:bg-white/10 rounded-full relative`}
                             onClick={toggleModelSelector}
                         >
                             <ModelIcon />
@@ -213,12 +213,12 @@ const MessageInput = ({ onSendMessage, isLoading, setIsLoading, onMediaRequested
                                 theme === 'dark' 
                                   ? 'text-[#cc2b5e] hover:text-[#bd194d]' 
                                   : 'text-[#cc2b5e] hover:text-[#bd194d]'
-                            } transition-all text-lg sm:text-xl p-1 hover:bg-white/10 rounded-full flex items-center ${deepResearch ? 'bg-white/20' : ''}`}
+                            } transition-all text-base xs:text-lg sm:text-xl p-0.5 xs:p-1 hover:bg-white/10 rounded-full flex items-center ${deepResearch ? 'bg-white/20' : ''}`}
                             title={deepResearch ? "Web research mode enabled" : "Web research mode disabled"}
                             onClick={toggleDeepResearch}
                         >
                             <CiGlobe />
-                            {deepResearch && <span className="ml-1 text-[10px] sm:text-xs whitespace-nowrap text-[#cc2b5e] font-medium">Web</span>}
+                            {deepResearch && <span className="ml-1 text-[8px] xs:text-[10px] sm:text-xs whitespace-nowrap text-[#cc2b5e] font-medium">Web</span>}
                         </button>
                         <button 
                             type="button"
@@ -226,12 +226,12 @@ const MessageInput = ({ onSendMessage, isLoading, setIsLoading, onMediaRequested
                                 theme === 'dark' 
                                   ? 'text-[#cc2b5e] hover:text-[#bd194d]' 
                                   : 'text-[#cc2b5e] hover:text-[#bd194d]'
-                            } transition-all text-lg sm:text-xl p-1 hover:bg-white/10 rounded-full flex items-center ${useAgent ? 'bg-white/10' : ''}`}
+                            } transition-all text-base xs:text-lg sm:text-xl p-0.5 xs:p-1 hover:bg-white/10 rounded-full flex items-center ${useAgent ? 'bg-white/10' : ''}`}
                             title={useAgent ? "AI agent enabled" : "AI agent disabled"}
                             onClick={toggleAgentChat}
                         >
                             <FaLightbulb />
-                            {useAgent && <span className="ml-1 text-[10px] sm:text-xs whitespace-nowrap text-[#cc2b5e] font-medium">Agent</span>}
+                            {useAgent && <span className="ml-1 text-[8px] xs:text-[10px] sm:text-xs whitespace-nowrap text-[#cc2b5e] font-medium">Agent</span>}
                         </button>
                     </div>
 
@@ -249,7 +249,7 @@ const MessageInput = ({ onSendMessage, isLoading, setIsLoading, onMediaRequested
                                 theme === 'dark' 
                                   ? 'text-[#cc2b5e] hover:text-[#bd194d]' 
                                   : 'text-[#cc2b5e] hover:text-[#bd194d]'
-                            } transition-all text-lg sm:text-xl p-1 hover:bg-white/10 rounded-full cursor-pointer ${uploadedFile ? 'bg-white/10' : ''}`}
+                            } transition-all text-base xs:text-lg sm:text-xl p-0.5 xs:p-1 hover:bg-white/10 rounded-full cursor-pointer ${uploadedFile ? 'bg-white/10' : ''}`}
                             title={uploadedFile ? `File attached: ${uploadedFile}` : "Attach file"}
                         >
                             <MdAttachFile />
@@ -264,7 +264,7 @@ const MessageInput = ({ onSendMessage, isLoading, setIsLoading, onMediaRequested
                             className="fixed inset-0 bg-transparent z-10"
                             onClick={() => setIsModelSelectorOpen(false)}
                         />
-                        <div className={`absolute left-0 bottom-full mb-2 w-[200px] sm:w-[240px] ${
+                        <div className={`absolute left-0 bottom-full mb-2 w-[180px] xs:w-[200px] sm:w-[240px] max-w-[90vw] ${
                             theme === 'dark'
                               ? 'bg-black/90 backdrop-blur-xl shadow-[0_0_15px_rgba(204,43,94,0.3)] border border-[#cc2b5e]/20'
                               : 'bg-white shadow-lg border border-gray-200'
@@ -298,8 +298,8 @@ const MessageInput = ({ onSendMessage, isLoading, setIsLoading, onMediaRequested
                                             onClick={() => handleModelSelect(model.id)}
                                         >
                                             <Icon className="text-[#cc2b5e] text-base mb-1" />
-                                            <span className={`text-[10px] font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>{model.name.length > 12 ? model.name.substring(0, 10) + '...' : model.name}</span>
-                                            <span className={`text-[8px] ${theme === 'dark' ? 'text-white/60' : 'text-gray-600'}`}>{model.cost}</span>
+                                            <span className={`text-[9px] xs:text-[10px] font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>{model.name.length > 12 ? model.name.substring(0, 10) + '...' : model.name}</span>
+                                            <span className={`text-[7px] xs:text-[8px] ${theme === 'dark' ? 'text-white/60' : 'text-gray-600'}`}>{model.cost}</span>
                                         </button>
                                     );
                                 })}
@@ -310,8 +310,8 @@ const MessageInput = ({ onSendMessage, isLoading, setIsLoading, onMediaRequested
 
                 {/* File upload indicator */}
                 {uploadedFile && (
-                    <div className="absolute left-2 sm:left-4 top-[-28px] sm:top-[-30px] text-xs text-white bg-[#cc2b5e]/80 rounded-lg px-2 py-1 flex items-center">
-                        <span className="truncate max-w-[150px]">{uploadedFile}</span>
+                    <div className="absolute left-1 xs:left-2 sm:left-4 top-[-24px] xs:top-[-28px] sm:top-[-30px] text-[10px] xs:text-xs text-white bg-[#cc2b5e]/80 rounded-lg px-1.5 xs:px-2 py-0.5 xs:py-1 flex items-center">
+                        <span className="truncate max-w-[120px] xs:max-w-[150px] sm:max-w-[200px]">{uploadedFile}</span>
                         <button 
                             type="button"
                             onClick={() => {
@@ -321,9 +321,9 @@ const MessageInput = ({ onSendMessage, isLoading, setIsLoading, onMediaRequested
                                     fileInputRef.current.value = "";
                                 }
                             }} 
-                            className="ml-2 text-white hover:text-white/80"
+                            className="ml-1.5 xs:ml-2 text-white hover:text-white/80"
                         >
-                            <IoClose size={14} />
+                            <IoClose size={12} />
                         </button>
                     </div>
                 )}
