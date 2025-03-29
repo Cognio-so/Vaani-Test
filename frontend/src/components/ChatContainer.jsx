@@ -889,8 +889,8 @@ const ChatContainer = () => {
                 </div>
               </div>
               
-              {/* Fixed position for input when conversation is active */}
-              <div className="w-full flex-shrink-0 px-4 xs:px-6 sm:px-8 pb-1 sm:pb-2 z-20 mt-auto mb-0 sm:mb-2">
+              {/* For active conversation - Change this container */}
+              <div className="w-full flex-shrink-0 px-4 xs:px-6 sm:px-8 pb-1 pt-1 z-20 sticky bottom-0 bg-[#0a0a0a]">
                 <MessageInput 
                   onSendMessage={handleSendMessage} 
                   isLoading={isLoading}
@@ -956,7 +956,7 @@ const ChatContainer = () => {
               </div>
               
               {/* Keep the bottom input for mobile view only */}
-              <div className="md:hidden w-full flex-shrink-0 px-4 xs:px-6 sm:px-8 pb-1 sm:pb-2 z-20 mt-auto mb-0 sm:mb-2">
+              <div className="md:hidden w-full flex-shrink-0 px-4 xs:px-6 sm:px-8 pb-1 pt-1 z-20 sticky bottom-0 bg-[#0a0a0a]">
                 <MessageInput 
                   onSendMessage={handleSendMessage}
                   isLoading={isLoading}
