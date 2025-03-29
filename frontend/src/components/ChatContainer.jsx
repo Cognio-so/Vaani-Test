@@ -777,7 +777,7 @@ const ChatContainer = () => {
           ${isSidebarVisible ? 'lg:ml-64 sm:ml-16 ml-14' : 'ml-0'}`}>
           
           {/* Invisible spacing container - Make it smaller on mobile */}
-          <div className="md:hidden h-10 sm:h-14 flex-shrink-0"></div>
+          <div className="md:hidden h-8 sm:h-12 flex-shrink-0"></div>
           
           {/* Centered Mobile Header - Position it better */}
           <div className="absolute top-0 left-0 right-0 h-14 sm:h-16 flex items-center justify-center md:hidden z-20 pointer-events-none">
@@ -804,7 +804,7 @@ const ChatContainer = () => {
           
           {hasActiveConversation ? (
             <div className="flex-1 flex flex-col overflow-hidden h-full">
-              <div className="flex-1 overflow-y-auto px-0 pt-12 pb-4 scroll-smooth min-h-0 messages-container"
+              <div className="flex-1 overflow-y-auto px-0 pt-12 pb-0 scroll-smooth min-h-0 messages-container"
                 style={{ 
                   msOverflowStyle: "none", 
                   scrollbarWidth: "none",
@@ -889,8 +889,8 @@ const ChatContainer = () => {
                 </div>
               </div>
               
-              {/* Mobile input container with correct class */}
-              <div className="w-full flex-shrink-0 px-3 xs:px-4 sm:px-8 pb-2 mb-1 sm:mb-2 z-20 sticky bottom-0 bg-[#0a0a0a] md:bg-[#0a0a0a] mobile-input-container md:!static md:!p-inherit">
+              {/* Fixed position input container with proper margins */}
+              <div className="w-full flex-shrink-0 px-3 xs:px-4 sm:px-8 py-2 mb-0 z-20 sticky bottom-0 bg-[#0a0a0a]">
                 <MessageInput 
                   onSendMessage={handleSendMessage} 
                   isLoading={isLoading}
@@ -904,9 +904,8 @@ const ChatContainer = () => {
             </div>
           ) : (
             <div className="flex-1 flex flex-col overflow-hidden h-full">
-              <div className="flex-1 overflow-y-auto px-4 pt-10 pb-2 flex flex-col items-center justify-center -mt-6 sm:-mt-8 messages-container">
-                <div className="items-center text-center w-full transition-all duration-300 
-                  max-w-sm sm:max-w-xl md:max-w-2xl lg:max-w-3xl">
+              <div className="flex-1 overflow-y-auto px-4 pt-6 pb-0 flex flex-col items-center justify-center mt-0 messages-container">
+                <div className="items-center text-center w-full max-w-sm sm:max-w-xl md:max-w-2xl lg:max-w-3xl">
                   <h1 className="text-xl sm:text-3xl font-bold text-[#cc2b5e]">Welcome to Vaani.pro</h1>
                   <p className="text-[#cc2b5e] text-sm sm:text-xl mt-1 sm:mt-2">How may I help you?</p>
                   
@@ -939,8 +938,8 @@ const ChatContainer = () => {
                     ))}
                   </div>
                   
-                  {/* Add message input in the center for desktop only, hidden on mobile */}
-                  <div className="hidden md:block w-full max-w-3xl mx-auto mt-6 sm:mt-8">
+                  {/* Desktop message input with proper spacing */}
+                  <div className="hidden md:block w-full max-w-3xl mx-auto mt-6">
                     <MessageInput 
                       onSendMessage={handleSendMessage}
                       isLoading={isLoading}
@@ -954,7 +953,8 @@ const ChatContainer = () => {
                 </div>
               </div>
               
-              <div className="md:hidden w-full flex-shrink-0 px-3 xs:px-4 sm:px-8 pb-2 mb-1 sm:mb-2 z-20 sticky bottom-0 bg-[#0a0a0a] mobile-input-container">
+              {/* Mobile input for empty state with proper positioning */}
+              <div className="md:hidden w-full flex-shrink-0 px-3 xs:px-4 sm:px-8 py-2 mb-0 z-20 sticky bottom-0 bg-[#0a0a0a]">
                 <MessageInput 
                   onSendMessage={handleSendMessage}
                   isLoading={isLoading}

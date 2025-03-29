@@ -120,8 +120,7 @@ const MessageInput = ({ onSendMessage, isLoading, setIsLoading, onMediaRequested
             use_agent: useAgent,
             deep_research: deepResearch,
             is_research: deepResearch,
-            stream: true,  // Always use streaming for faster response display
-            priority: 'high' // Add priority flag
+            stream: true  // Always use streaming for faster response display
         });
         
         // Clear file upload if any
@@ -177,7 +176,7 @@ const MessageInput = ({ onSendMessage, isLoading, setIsLoading, onMediaRequested
                 <textarea
                     ref={textareaRef}
                     placeholder='Ask me anything...'
-                    className={`w-full py-1 xs:py-1.5 sm:py-2 mb-5 xs:mb-6 sm:mb-8 bg-transparent outline-none text-xs xs:text-sm sm:text-base resize-none overflow-y-auto scrollbar-hide min-h-[32px] xs:min-h-[36px] sm:min-h-[48px] max-h-24 xs:max-h-28 sm:max-h-40 ${
+                    className={`w-full py-1 xs:py-1.5 sm:py-2 mb-5 xs:mb-6 sm:mb-7 bg-transparent outline-none text-xs xs:text-sm sm:text-base resize-none overflow-y-auto scrollbar-hide min-h-[32px] xs:min-h-[36px] sm:min-h-[40px] max-h-20 xs:max-h-24 sm:max-h-32 ${
                         theme === 'dark' ? 'placeholder-gray-400' : 'placeholder-gray-500'
                     }`}
                     rows={1}
@@ -197,41 +196,48 @@ const MessageInput = ({ onSendMessage, isLoading, setIsLoading, onMediaRequested
                     <div className="flex items-center gap-0.5 xs:gap-1 sm:gap-2">
                         <button 
                             type="button"
-                            className={`${
+                            className={`group relative ${
                                 theme === 'dark' 
                                   ? 'text-[#cc2b5e] hover:text-[#bd194d]' 
                                   : 'text-[#cc2b5e] hover:text-[#bd194d]'
-                            } transition-all text-base xs:text-lg sm:text-xl p-0.5 xs:p-1 hover:bg-white/10 rounded-full relative`}
+                            } transition-all text-base xs:text-lg sm:text-xl p-0.5 xs:p-1 hover:bg-white/10 rounded-full`}
                             onClick={toggleModelSelector}
                         >
                             <ModelIcon />
+                            <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-1.5 py-0.5 bg-black/80 text-white text-[9px] rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                                Select Model
+                            </span>
                         </button>
                         
                         <button 
                             type="button"
-                            className={`${
+                            className={`group relative ${
                                 theme === 'dark' 
                                   ? 'text-[#cc2b5e] hover:text-[#bd194d]' 
                                   : 'text-[#cc2b5e] hover:text-[#bd194d]'
                             } transition-all text-base xs:text-lg sm:text-xl p-0.5 xs:p-1 hover:bg-white/10 rounded-full flex items-center ${deepResearch ? 'bg-white/20' : ''}`}
-                            title={deepResearch ? "Web research mode enabled" : "Web research mode disabled"}
                             onClick={toggleDeepResearch}
                         >
                             <CiGlobe />
                             {deepResearch && <span className="ml-1 text-[8px] xs:text-[10px] sm:text-xs whitespace-nowrap text-[#cc2b5e] font-medium">Web</span>}
+                            <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-1.5 py-0.5 bg-black/80 text-white text-[9px] rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                                Web Research
+                            </span>
                         </button>
                         <button 
                             type="button"
-                            className={`${
+                            className={`group relative ${
                                 theme === 'dark' 
                                   ? 'text-[#cc2b5e] hover:text-[#bd194d]' 
                                   : 'text-[#cc2b5e] hover:text-[#bd194d]'
                             } transition-all text-base xs:text-lg sm:text-xl p-0.5 xs:p-1 hover:bg-white/10 rounded-full flex items-center ${useAgent ? 'bg-white/10' : ''}`}
-                            title={useAgent ? "AI agent enabled" : "AI agent disabled"}
                             onClick={toggleAgentChat}
                         >
                             <FaLightbulb />
                             {useAgent && <span className="ml-1 text-[8px] xs:text-[10px] sm:text-xs whitespace-nowrap text-[#cc2b5e] font-medium">Agent</span>}
+                            <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-1.5 py-0.5 bg-black/80 text-white text-[9px] rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                                AI Agent
+                            </span>
                         </button>
                     </div>
 
@@ -245,14 +251,16 @@ const MessageInput = ({ onSendMessage, isLoading, setIsLoading, onMediaRequested
                         />
                         <label 
                             htmlFor="file-upload" 
-                            className={`${
+                            className={`group relative ${
                                 theme === 'dark' 
                                   ? 'text-[#cc2b5e] hover:text-[#bd194d]' 
                                   : 'text-[#cc2b5e] hover:text-[#bd194d]'
                             } transition-all text-base xs:text-lg sm:text-xl p-0.5 xs:p-1 hover:bg-white/10 rounded-full cursor-pointer ${uploadedFile ? 'bg-white/10' : ''}`}
-                            title={uploadedFile ? `File attached: ${uploadedFile}` : "Attach file"}
                         >
                             <MdAttachFile />
+                            <span className="absolute bottom-full right-0 mb-1 px-1.5 py-0.5 bg-black/80 text-white text-[9px] rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                                Attach File
+                            </span>
                         </label>
                     </div>
                 </div>
