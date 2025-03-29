@@ -49,7 +49,7 @@ const Sidebar = ({ isVisible, onToggle, onOpenSettings, onOpenHistory, onNewChat
             <div className={`fixed left-0 top-0 h-screen w-14 sm:w-16 lg:w-64 ${
                 theme === 'dark' ? 'bg-black text-white z-[100]' : 'bg-white text-gray-800 border-r border-gray-200 z-[100]'
             } p-2 sm:p-4 flex flex-col transition-all duration-300 
-                ${!isVisible ? '-translate-x-full' : 'translate-x-0'} overflow-y-auto scrollbar-hide`}>
+                ${!isVisible ? '-translate-x-full' : 'translate-x-0'} overflow-y-auto scrollbar-hide pb-safe`}>
                 {/* Top Section with Menu Icon and Logo - Always visible */}
                 <div className="flex items-center space-x-0 justify-between mt-6">
                     <div className="hidden lg:flex items-center">
@@ -113,8 +113,8 @@ const Sidebar = ({ isVisible, onToggle, onOpenSettings, onOpenHistory, onNewChat
                     </ul>
                 </nav>
 
-                {/* Bottom Section */}
-                <div className="border-t border-gray-700 pt-6">
+                {/* Bottom Section - Added flex-shrink-0 to prevent shrinking */}
+                <div className="border-t border-gray-700 pt-4 pb-4 flex-shrink-0 mt-auto">
                     <ul className="space-y-4">
                         <li>
                             <button 
