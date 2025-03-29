@@ -755,7 +755,7 @@ const ChatContainer = () => {
       )}
 
       {isSettingsOpen && (
-        <div className={`fixed inset-0 ${theme === 'dark' ? 'bg-[#1a1a1a]' : 'bg-gray-100'} z-50`}>
+        <div className={`fixed inset-0 ${theme === 'dark' ? 'bg-[#1a1a1a]' : 'bg-gray-100'} z-[200]`}>
           <Settings 
             isOpen={isSettingsOpen} 
             onClose={() => setIsSettingsOpen(false)} 
@@ -776,17 +776,19 @@ const ChatContainer = () => {
         <main className={`flex-1 flex flex-col h-full overflow-hidden transition-all duration-300 
           ${isSidebarVisible ? 'lg:ml-64 sm:ml-16 ml-14' : 'ml-0'}`}>
           
-          {/* Invisible spacing container - only visible in responsive mode */}
+          {/* Invisible spacing container - Pushes content down on mobile */}
           <div className="md:hidden h-16 sm:h-20 flex-shrink-0"></div>
           
-          {/* Floating logo - positioned absolutely */}
-          <div className={`absolute top-4 left-4 z-10 flex items-center ${isSidebarVisible ? 'sm:hidden' : 'ml-16 sm:ml-20'}`}>
-            <img src="/vannipro.png" alt="Vaani.pro Logo" className="h-6 sm:h-8" />
-            <h1 className="text-sm sm:text-lg font-bold ml-2 text-[#cc2b5e]">Vaani.pro</h1>
+          {/* Centered Mobile Header */}
+          <div className="absolute top-0 left-0 right-0 h-16 sm:h-20 flex items-center justify-center md:hidden z-20 pointer-events-none">
+            <div className="flex items-center pointer-events-auto"> {/* Allow clicking logo if needed */}
+                <img src="/vannipro.png" alt="Vaani.pro Logo" className="h-6 sm:h-8" />
+                <h1 className="text-sm sm:text-lg font-bold ml-2 text-[#cc2b5e]">Vaani.pro</h1>
+            </div>
           </div>
             
-          {/* Floating user profile - positioned absolutely */}
-          <div className="absolute top-4 right-6 z-10 flex items-center">
+          {/* Floating user profile - Ensure higher z-index */}
+          <div className="absolute top-4 right-6 z-30 flex items-center"> 
             <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden">
               <img 
                 src={user?.profilePicture || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23cc2b5e'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/%3E%3C/svg%3E"}
@@ -801,8 +803,8 @@ const ChatContainer = () => {
           </div>
           
           {hasActiveConversation ? (
-            <div className="flex-1 flex flex-col overflow-hidden">
-              <div className="flex-1 overflow-y-auto px-0 pt-16 pb-2 scroll-smooth min-h-0" 
+            <div className="flex-1 flex flex-col overflow-hidden h-full">
+              <div className="flex-1 overflow-y-auto px-0 pt-16 pb-4 scroll-smooth min-h-0"
                 style={{ 
                   msOverflowStyle: "none", 
                   scrollbarWidth: "none",
@@ -819,7 +821,7 @@ const ChatContainer = () => {
                     return (
                       <div 
                         key={index} 
-                        className={`mb-8 w-full flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                        className={`mb-6 w-full flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                         {msg.role === 'user' ? (
                           <div className={`${
                             theme === 'dark'
@@ -833,7 +835,7 @@ const ChatContainer = () => {
                             theme === 'dark'
                               ? 'text-white' 
                               : 'text-gray-800'
-                          } rounded-xl p-0 overflow-hidden inline-block w-full max-w-[95%] xs:max-w-[90%] sm:max-w-3xl md:max-w-3xl pl-2 xs:pl-3 sm:pl-0`}>
+                          } rounded-xl p-0 overflow-hidden inline-block w-full max-w-full pl-2 xs:pl-3 sm:pl-0`}>
                             <MessageContent 
                               content={displayContent} 
                               forceImageDisplay={true} 
@@ -887,7 +889,7 @@ const ChatContainer = () => {
                 </div>
               </div>
               
-              <div className="w-full flex-shrink-0 px-4 xs:px-6 sm:px-8 pb-2 sm:pb-4 z-20 mt-4">
+              <div className="w-full flex-shrink-0 px-4 xs:px-6 sm:px-8 pb-3 sm:pb-4 z-20 mt-auto mb-3 sm:mb-4">
                 <MessageInput 
                   onSendMessage={handleSendMessage} 
                   isLoading={isLoading}
@@ -900,9 +902,9 @@ const ChatContainer = () => {
               </div>
             </div>
           ) : (
-            <div className="flex-1 flex flex-col overflow-auto mb-2 sm:mb-4">
+            <div className="flex-1 flex flex-col overflow-hidden h-full">
               {/* Welcome content - preserved */}
-              <div className="w-full flex-1 flex flex-col items-center justify-center -mt-6 sm:-mt-12 px-4">
+              <div className="flex-1 overflow-y-auto px-4 pt-16 pb-4 flex flex-col items-center justify-center -mt-6 sm:-mt-12">
                 <div className="items-center text-center w-full transition-all duration-300 
                   max-w-sm sm:max-w-xl md:max-w-2xl lg:max-w-3xl">
                   <h1 className="text-2xl sm:text-3xl font-bold text-[#cc2b5e]">Welcome to Vaani.pro</h1>
@@ -936,24 +938,10 @@ const ChatContainer = () => {
                       </motion.div>
                     ))}
                   </div>
-
-                  {/* Desktop MessageInput below prompts with increased spacing */}
-                  <div className="hidden md:block w-full max-w-3xl mx-auto mt-8 sm:mt-10">
-                    <MessageInput 
-                      onSendMessage={handleSendMessage}
-                      isLoading={isLoading}
-                      setIsLoading={setIsLoading}
-                      onMediaRequested={handleMediaRequested}
-                      onModelChange={handleModelChange}
-                      onOptionsChange={handleInputOptionsChange}
-                      selectedModel={model}
-                    />
-                  </div>
                 </div>
               </div>
               
-              {/* Mobile MessageInput at bottom */}
-              <div className="md:hidden w-full mt-auto px-4 xs:px-6 pb-4 z-20 mb-3 sm:mb-4">
+              <div className="w-full flex-shrink-0 px-4 xs:px-6 sm:px-8 pb-3 sm:pb-4 z-20 mt-auto mb-3 sm:mb-4">
                 <MessageInput 
                   onSendMessage={handleSendMessage}
                   isLoading={isLoading}

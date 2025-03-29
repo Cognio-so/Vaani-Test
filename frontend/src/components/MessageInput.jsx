@@ -218,7 +218,7 @@ const MessageInput = ({ onSendMessage, isLoading, setIsLoading, onMediaRequested
                             onClick={toggleDeepResearch}
                         >
                             <CiGlobe />
-                            {deepResearch && <span className="ml-1 text-[10px] sm:text-xs hidden xs:inline whitespace-nowrap text-[#cc2b5e] font-medium">Web</span>}
+                            {deepResearch && <span className="ml-1 text-[10px] sm:text-xs whitespace-nowrap text-[#cc2b5e] font-medium">Web</span>}
                         </button>
                         <button 
                             type="button"
@@ -231,7 +231,7 @@ const MessageInput = ({ onSendMessage, isLoading, setIsLoading, onMediaRequested
                             onClick={toggleAgentChat}
                         >
                             <FaLightbulb />
-                            {useAgent && <span className="ml-1 text-[10px] sm:text-xs hidden xs:inline whitespace-nowrap text-[#cc2b5e] font-medium">Agent</span>}
+                            {useAgent && <span className="ml-1 text-[10px] sm:text-xs whitespace-nowrap text-[#cc2b5e] font-medium">Agent</span>}
                         </button>
                     </div>
 
