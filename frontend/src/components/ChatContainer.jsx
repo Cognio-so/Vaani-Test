@@ -1369,7 +1369,7 @@ const ChatContainer = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className={`relative h-screen flex flex-col ${theme === 'dark' ? 'bg-custom-gradient' : 'bg-white'} px-2 sm:px-4 md:px-6 py-2 sm:py-4 overflow-hidden`}>
       {isHistoryOpen && (
         <div className={`fixed inset-0 ${theme === 'dark' ? 'bg-[#1a1a1a]' : 'bg-gray-100'} z-50`}>
           <ChatHistory 
@@ -1404,17 +1404,17 @@ const ChatContainer = () => {
           ${isSidebarVisible ? 'ml-16 sm:ml-20 lg:ml-64' : 'ml-0'}`}>
           
           {/* Added logo header */}
-          <div className="flex justify-between items-center py-2 px-4 ml-16">
+          <div className="flex justify-between items-center py-0.5 px-2 ml-0 sm:ml-16">
             {/* Logo that shows only when sidebar is hidden or on small screens */}
             <div className={`flex items-center ${isSidebarVisible ? 'sm:hidden' : ''}`}>
-              <img src="/vannipro.png" alt="Vaani.pro Logo" className="h-8 sm:h-9" />
-              <h1 className="text-lg sm:text-xl font-bold ml-2 text-[#cc2b5e]">Vaani.pro</h1>
+              <img src="/vannipro.png" alt="Vaani.pro Logo" className="h-6 sm:h-8" />
+              <h1 className="text-sm sm:text-lg font-bold ml-2 text-[#cc2b5e]">Vaani.pro</h1>
             </div>
             
             {/* Share button that shows when sidebar is visible on non-small screens */}
             <div className={`${!isSidebarVisible || window.innerWidth < 640 ? 'hidden' : 'flex'} items-center`}>
-              <button className="flex items-center bg-transparent hover:bg-[#cc2b5e]/30 text-[#cc2b5e] px-3 py-1.5 rounded-full text-sm transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" viewBox="0 0 20 20" fill="currentColor">
+              <button className="flex items-center bg-transparent hover:bg-[#cc2b5e]/30 text-[#cc2b5e] px-2 py-1 rounded-full text-xs sm:text-sm transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" viewBox="0 0 20 20" fill="currentColor">
                   <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
                 </svg>
                 Share
@@ -1423,7 +1423,7 @@ const ChatContainer = () => {
             
             {/* User profile picture at top right */}
             <div className="flex items-center">
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full overflow-hidden">
+              <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-full overflow-hidden">
                 <img 
                   src={user?.profilePicture || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23cc2b5e'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/%3E%3C/svg%3E"}
                   alt={user?.name || "Profile"} 
@@ -1679,6 +1679,18 @@ const ChatContainer = () => {
                   )}
                 </div>
               </div>
+              
+              <div className="mt-auto pb-3 w-full px-0">
+                <MessageInput 
+                  onSendMessage={handleSendMessage} 
+                  isLoading={isLoading}
+                  setIsLoading={setIsLoading}
+                  onMediaRequested={handleMediaRequested}
+                  onModelChange={handleModelChange}
+                  onOptionsChange={handleInputOptionsChange}
+                  selectedModel={model}
+                />
+              </div>
             </div>
           ) : (
             <div className={`h-full flex-1 flex flex-col ${theme === 'dark' ? 'bg-black' : 'bg-white'} px-2 sm:px-4 md:px-6 py-2 sm:py-4 items-center overflow-hidden`}>
@@ -1718,7 +1730,7 @@ const ChatContainer = () => {
                   </div>
 
                   {/* Desktop MessageInput below prompts with increased spacing */}
-                  <div className="hidden md:block w-full max-w-3xl mx-auto mt-12">
+                  <div className="hidden md:block w-full max-w-3xl mx-auto mt-10">
                     <MessageInput 
                       onSendMessage={handleSendMessage}
                       isLoading={isLoading}
@@ -1731,22 +1743,22 @@ const ChatContainer = () => {
                   </div>
                 </div>
               </div>
+              
+              {/* Mobile MessageInput at bottom */}
+              <div className="md:hidden w-full mt-auto pb-2 z-10">
+                <MessageInput 
+                  onSendMessage={handleSendMessage}
+                  isLoading={isLoading}
+                  setIsLoading={setIsLoading}
+                  onMediaRequested={handleMediaRequested}
+                  onModelChange={handleModelChange}
+                  onOptionsChange={handleInputOptionsChange}
+                  selectedModel={model}
+                />
+              </div>
             </div>
           )}
         </main>
-      </div>
-      
-      {/* Fixed MessageInput at bottom with proper z-index */}
-      <div className="fixed bottom-0 left-0 right-0 z-10 px-2 sm:px-4 pb-2 sm:pb-4">
-        <MessageInput 
-          onSendMessage={handleSendMessage}
-          isLoading={isLoading}
-          setIsLoading={setIsLoading}
-          onMediaRequested={handleMediaRequested}
-          onModelChange={handleModelChange}
-          onOptionsChange={handleInputOptionsChange}
-          selectedModel={model}
-        />
       </div>
     </div>
   )
