@@ -890,7 +890,7 @@ const ChatContainer = () => {
               </div>
               
               {/* Fixed position input container with proper margins */}
-              <div className="w-full flex-shrink-0 px-3 xs:px-4 sm:px-8 py-2 mb-0 z-20 sticky bottom-0 bg-[#0a0a0a]">
+              <div className="w-full flex-shrink-0 px-3 xs:px-4 sm:px-8 py-2 pb-4 mb-0 z-20 sticky bottom-0 bg-[#0a0a0a]">
                 <MessageInput 
                   onSendMessage={handleSendMessage} 
                   isLoading={isLoading}
@@ -954,7 +954,7 @@ const ChatContainer = () => {
               </div>
               
               {/* Mobile input for empty state with proper positioning */}
-              <div className="md:hidden w-full flex-shrink-0 px-3 xs:px-4 sm:px-8 py-2 mb-0 z-20 sticky bottom-0 bg-[#0a0a0a]">
+              <div className="md:hidden w-full flex-shrink-0 px-3 xs:px-4 sm:px-8 py-2 pb-4 mb-0 z-20 sticky bottom-0 bg-[#0a0a0a]">
                 <MessageInput 
                   onSendMessage={handleSendMessage}
                   isLoading={isLoading}

@@ -120,7 +120,8 @@ const MessageInput = ({ onSendMessage, isLoading, setIsLoading, onMediaRequested
             use_agent: useAgent,
             deep_research: deepResearch,
             is_research: deepResearch,
-            stream: true  // Always use streaming for faster response display
+            stream: true,  // Always use streaming for faster response display
+            priority: 'high' // Add priority flag
         });
         
         // Clear file upload if any
@@ -167,16 +168,16 @@ const MessageInput = ({ onSendMessage, isLoading, setIsLoading, onMediaRequested
     const ModelIcon = currentModel ? currentModel.icon : RiSparkling2Fill;
 
     return (
-        <form onSubmit={handleSendMessage} className="w-full max-w-full mx-auto">
+        <form onSubmit={handleSendMessage} className='w-full max-w-full xs:max-w-[94%] sm:max-w-[90%] md:max-w-3xl mx-auto mb-safe'>
             <div className={`relative rounded-lg sm:rounded-xl ${
                 theme === 'dark' 
-                  ? 'bg-white/[0.2] backdrop-blur-xl text-white shadow-[0_0_15px_rgba(204,43,94,0.3)]' 
-                  : 'bg-gray-100 text-gray-800 shadow-md'
-            } px-2 xs:px-3 sm:px-4 py-2`}>
+                  ? 'bg-white/[0.2] backdrop-blur-xl text-white shadow-[0_0_15px_rgba(204,43,94,0.3)] hover:shadow-[0_0_20px_rgba(204,43,94,0.5)]' 
+                  : 'bg-gray-100 text-gray-800 shadow-md hover:shadow-lg'
+            } px-2 sm:px-4 pt-2 sm:pt-3 pb-6 sm:pb-8`}>
                 <textarea
                     ref={textareaRef}
                     placeholder='Ask me anything...'
-                    className={`w-full py-1 xs:py-1.5 sm:py-2 mb-5 xs:mb-6 sm:mb-7 bg-transparent outline-none text-xs xs:text-sm sm:text-base resize-none overflow-y-auto scrollbar-hide min-h-[32px] xs:min-h-[36px] sm:min-h-[40px] max-h-20 xs:max-h-24 sm:max-h-32 ${
+                    className={`relative w-full  py-2 mb-1 sm:mb-4 bg-transparent outline-none text-xs sm:text-sm md:text-base resize-none overflow-hidden scrollbar-hide min-h-[40px] sm:min-h-[48px] ${
                         theme === 'dark' ? 'placeholder-gray-400' : 'placeholder-gray-500'
                     }`}
                     rows={1}
@@ -192,77 +193,66 @@ const MessageInput = ({ onSendMessage, isLoading, setIsLoading, onMediaRequested
                     }}
                 />
                 
-                <div className="absolute bottom-1 xs:bottom-1.5 sm:bottom-2 left-1 xs:left-2 sm:left-3 right-1 xs:right-2 sm:right-3 flex justify-between items-center">
-                    <div className="flex items-center gap-0.5 xs:gap-1 sm:gap-2">
-                        <button 
-                            type="button"
-                            className={`group relative ${
-                                theme === 'dark' 
-                                  ? 'text-[#cc2b5e] hover:text-[#bd194d]' 
-                                  : 'text-[#cc2b5e] hover:text-[#bd194d]'
-                            } transition-all text-base xs:text-lg sm:text-xl p-0.5 xs:p-1 hover:bg-white/10 rounded-full`}
-                            onClick={toggleModelSelector}
-                        >
-                            <ModelIcon />
-                            <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-1.5 py-0.5 bg-black/80 text-white text-[9px] rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                                Select Model
-                            </span>
-                        </button>
-                        
-                        <button 
-                            type="button"
-                            className={`group relative ${
-                                theme === 'dark' 
-                                  ? 'text-[#cc2b5e] hover:text-[#bd194d]' 
-                                  : 'text-[#cc2b5e] hover:text-[#bd194d]'
-                            } transition-all text-base xs:text-lg sm:text-xl p-0.5 xs:p-1 hover:bg-white/10 rounded-full flex items-center ${deepResearch ? 'bg-white/20' : ''}`}
-                            onClick={toggleDeepResearch}
-                        >
-                            <CiGlobe />
-                            {deepResearch && <span className="ml-1 text-[8px] xs:text-[10px] sm:text-xs whitespace-nowrap text-[#cc2b5e] font-medium">Web</span>}
-                            <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-1.5 py-0.5 bg-black/80 text-white text-[9px] rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                                Web Research
-                            </span>
-                        </button>
-                        <button 
-                            type="button"
-                            className={`group relative ${
-                                theme === 'dark' 
-                                  ? 'text-[#cc2b5e] hover:text-[#bd194d]' 
-                                  : 'text-[#cc2b5e] hover:text-[#bd194d]'
-                            } transition-all text-base xs:text-lg sm:text-xl p-0.5 xs:p-1 hover:bg-white/10 rounded-full flex items-center ${useAgent ? 'bg-white/10' : ''}`}
-                            onClick={toggleAgentChat}
-                        >
-                            <FaLightbulb />
-                            {useAgent && <span className="ml-1 text-[8px] xs:text-[10px] sm:text-xs whitespace-nowrap text-[#cc2b5e] font-medium">Agent</span>}
-                            <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-1.5 py-0.5 bg-black/80 text-white text-[9px] rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                                AI Agent
-                            </span>
-                        </button>
-                    </div>
+                <div className="absolute left-1 sm:left-3 bottom-1 sm:bottom-2 flex items-center space-x-1 sm:space-x-3">
+                    <button 
+                        type="button"
+                        className={`${
+                            theme === 'dark' 
+                              ? 'text-[#cc2b5e] hover:text-[#bd194d]' 
+                              : 'text-[#cc2b5e] hover:text-[#bd194d]'
+                        } transition-all text-xl sm:text-2xl md:text-2xl p-1 sm:p-1.5 hover:bg-white/10 rounded-full relative`}
+                        onClick={toggleModelSelector}
+                    >
+                        <ModelIcon />
+                    </button>
+                    
+                    <button 
+                        type="button"
+                        className={`${
+                            theme === 'dark' 
+                              ? 'text-[#cc2b5e] hover:text-[#bd194d]' 
+                              : 'text-[#cc2b5e] hover:text-[#bd194d]'
+                        } transition-all text-xl sm:text-2xl md:text-2xl p-1 sm:p-1.5 hover:bg-white/10 rounded-full flex items-center ${deepResearch ? 'bg-white/20' : ''}`}
+                        title={deepResearch ? "Web research mode enabled - I'll search for up-to-date information" : "Web research mode disabled"}
+                        onClick={toggleDeepResearch}
+                    >
+                        <CiGlobe />
+                        {deepResearch && <span className="ml-1 text-xs whitespace-nowrap text-[#cc2b5e] font-medium">Web Research</span>}
+                    </button>
+                    <button 
+                        type="button"
+                        className={`${
+                            theme === 'dark' 
+                              ? 'text-[#cc2b5e] hover:text-[#bd194d]' 
+                              : 'text-[#cc2b5e] hover:text-[#bd194d]'
+                        } transition-all text-xl sm:text-2xl md:text-2xl p-1 sm:p-1.5 hover:bg-white/10 rounded-full flex items-center ${useAgent ? 'bg-white/10' : ''}`}
+                        title={useAgent ? "AI agent enabled" : "AI agent disabled"}
+                        onClick={toggleAgentChat}
+                    >
+                        <FaLightbulb />
+                        {useAgent && <span className="ml-1 text-xs whitespace-nowrap text-[#cc2b5e] font-medium">AI Agent</span>}
+                    </button>
+                </div>
 
-                    <div className="flex items-center">
-                        <input 
-                            type="file" 
-                            id="file-upload" 
-                            className="hidden" 
-                            ref={fileInputRef}
-                            onChange={handleFileChange}
-                        />
-                        <label 
-                            htmlFor="file-upload" 
-                            className={`group relative ${
-                                theme === 'dark' 
-                                  ? 'text-[#cc2b5e] hover:text-[#bd194d]' 
-                                  : 'text-[#cc2b5e] hover:text-[#bd194d]'
-                            } transition-all text-base xs:text-lg sm:text-xl p-0.5 xs:p-1 hover:bg-white/10 rounded-full cursor-pointer ${uploadedFile ? 'bg-white/10' : ''}`}
-                        >
-                            <MdAttachFile />
-                            <span className="absolute bottom-full right-0 mb-1 px-1.5 py-0.5 bg-black/80 text-white text-[9px] rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                                Attach File
-                            </span>
-                        </label>
-                    </div>
+                <div className="absolute right-2 sm:right-3 md:right-4 bottom-2 sm:bottom-3 md:bottom-4 flex items-center space-x-2 sm:space-x-3 md:space-x-4">
+                    <input 
+                        type="file" 
+                        id="file-upload" 
+                        className="hidden" 
+                        ref={fileInputRef}
+                        onChange={handleFileChange}
+                    />
+                    <label 
+                        htmlFor="file-upload" 
+                        className={`${
+                            theme === 'dark' 
+                              ? 'text-[#cc2b5e] hover:text-[#bd194d]' 
+                              : 'text-[#cc2b5e] hover:text-[#bd194d]'
+                        } transition-all text-xl sm:text-2xl md:text-2xl p-1 sm:p-1.5 hover:bg-white/10 rounded-full cursor-pointer ${uploadedFile ? 'bg-white/10' : ''}`}
+                        title={uploadedFile ? `File attached: ${uploadedFile}` : "Attach file"}
+                    >
+                        <MdAttachFile />
+                    </label>
                 </div>
                 
                 {/* Model Selector Dropdown */}
@@ -272,7 +262,7 @@ const MessageInput = ({ onSendMessage, isLoading, setIsLoading, onMediaRequested
                             className="fixed inset-0 bg-transparent z-10"
                             onClick={() => setIsModelSelectorOpen(false)}
                         />
-                        <div className={`absolute left-0 bottom-full mb-2 w-[180px] xs:w-[200px] sm:w-[240px] max-w-[90vw] ${
+                        <div className={`absolute left-0 bottom-full mb-2 w-[240px] ${
                             theme === 'dark'
                               ? 'bg-black/90 backdrop-blur-xl shadow-[0_0_15px_rgba(204,43,94,0.3)] border border-[#cc2b5e]/20'
                               : 'bg-white shadow-lg border border-gray-200'
@@ -306,8 +296,8 @@ const MessageInput = ({ onSendMessage, isLoading, setIsLoading, onMediaRequested
                                             onClick={() => handleModelSelect(model.id)}
                                         >
                                             <Icon className="text-[#cc2b5e] text-base mb-1" />
-                                            <span className={`text-[9px] xs:text-[10px] font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>{model.name.length > 12 ? model.name.substring(0, 10) + '...' : model.name}</span>
-                                            <span className={`text-[7px] xs:text-[8px] ${theme === 'dark' ? 'text-white/60' : 'text-gray-600'}`}>{model.cost}</span>
+                                            <span className={`text-[10px] font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>{model.name.length > 12 ? model.name.substring(0, 10) + '...' : model.name}</span>
+                                            <span className={`text-[8px] ${theme === 'dark' ? 'text-white/60' : 'text-gray-600'}`}>{model.cost}</span>
                                         </button>
                                     );
                                 })}
@@ -318,8 +308,8 @@ const MessageInput = ({ onSendMessage, isLoading, setIsLoading, onMediaRequested
 
                 {/* File upload indicator */}
                 {uploadedFile && (
-                    <div className="absolute left-1 xs:left-2 sm:left-4 top-[-24px] xs:top-[-28px] sm:top-[-30px] text-[10px] xs:text-xs text-white bg-[#cc2b5e]/80 rounded-lg px-1.5 xs:px-2 py-0.5 xs:py-1 flex items-center">
-                        <span className="truncate max-w-[120px] xs:max-w-[150px] sm:max-w-[200px]">{uploadedFile}</span>
+                    <div className="absolute left-0 top-[-30px] text-xs text-white bg-[#cc2b5e]/80 rounded-lg px-2 py-1 flex items-center">
+                        <span className="truncate max-w-[150px]">{uploadedFile}</span>
                         <button 
                             type="button"
                             onClick={() => {
@@ -329,9 +319,9 @@ const MessageInput = ({ onSendMessage, isLoading, setIsLoading, onMediaRequested
                                     fileInputRef.current.value = "";
                                 }
                             }} 
-                            className="ml-1.5 xs:ml-2 text-white hover:text-white/80"
+                            className="ml-2 text-white hover:text-white/80"
                         >
-                            <IoClose size={12} />
+                            <IoClose size={14} />
                         </button>
                     </div>
                 )}

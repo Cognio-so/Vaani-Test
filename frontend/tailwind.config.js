@@ -33,6 +33,12 @@ export default {
           '0%, 100%': { opacity: '1' },
           '50%': { opacity: '0.3' }
         }
+      },
+      margin: {
+        'safe': 'env(safe-area-inset-bottom, 0px)'
+      },
+      padding: {
+        'safe': 'env(safe-area-inset-bottom, 0px)'
       }
     },
   },
