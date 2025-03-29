@@ -1,11 +1,10 @@
-import { useState, useContext, useEffect } from "react"
+import { useState } from "react"
 import { useAuth } from "../context/AuthContext"
 import { Link } from "react-router-dom"
 import { HiMail } from "react-icons/hi"
 import { RiLockPasswordLine } from "react-icons/ri"
 import { FcGoogle } from "react-icons/fc"
 import ThreeScene from '../components/ThreeScene'
-import { ThemeContext } from '../App'
 
 export default function LoginForm() {
   const { login, signInWithGoogle } = useAuth()
@@ -15,15 +14,6 @@ export default function LoginForm() {
   })
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
-  const { theme } = useContext(ThemeContext)
-
-  // Clear any previous auth data when the login page is visited
-  useEffect(() => {
-    // If we're coming to login page directly (not from a redirect), clear session data
-    if (!document.referrer.includes(window.location.host)) {
-      sessionStorage.removeItem('user');
-    }
-  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -52,7 +42,7 @@ export default function LoginForm() {
   }
 
   return (
-    <div className={`flex h-screen ${theme === 'dark' ? 'bg-[#0a0a0a]' : 'bg-white'}`}>
+    <div className="flex h-screen bg-[#0a0a0a]">
       {/* Left Section - 3D Visual with Logo Overlay */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
         <ThreeScene />
@@ -65,21 +55,21 @@ export default function LoginForm() {
       </div>
 
       {/* Right Section - Login Form */}
-      <div className={`w-full lg:w-1/2 ${theme === 'dark' ? 'bg-[#0a0a0a]' : 'bg-gray-50'} flex items-center justify-center px-4 py-6 lg:px-8`}>
+      <div className="w-full lg:w-1/2 bg-[#0a0a0a] flex items-center justify-center px-4 py-6 lg:px-8">
         <div className="w-full max-w-sm space-y-6">
           <div className="text-center">
-            <p className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'} text-xs`}>Login your account</p>
+            <p className="text-gray-400 text-xs">Login your account</p>
             <h2 className="text-2xl font-semibold bg-clip-text text-transparent bg-gradient-to-r from-[#cc2b5e] to-[#753a88] mt-2">
               Welcome Back!
             </h2>
-            <p className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'} text-xs mt-1`}>Enter your email and password</p>
+            <p className="text-gray-400 text-xs mt-1">Enter your email and password</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && <div className="text-red-500 text-xs text-center">{error}</div>}
             
             <div className="space-y-1">
-              <label htmlFor="email" className={`block text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+              <label htmlFor="email" className="block text-xs text-gray-400">
                 Email address
               </label>
               <div className="relative">
@@ -93,14 +83,15 @@ export default function LoginForm() {
                   required
                   value={formData.email}
                   onChange={handleChange}
-                  className={`w-full pl-10 pr-3 py-2 border ${theme === 'dark' ? 'border-gray-700 bg-black/30 text-white focus:ring-[#cc2b5e] shadow-[0_0_15px_rgba(204,43,94,0.1)] hover:shadow-[0_0_25px_rgba(204,43,94,0.5)]' : 'border-gray-300 bg-white text-gray-900 focus:ring-[#cc2b5e] shadow-md hover:shadow-lg'} rounded-lg focus:outline-none focus:ring-2 transition-all duration-300`}
+                  className="w-full pl-10 pr-3 py-2 border border-gray-700 bg-black/30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#cc2b5e] 
+                    shadow-[0_0_15px_rgba(204,43,94,0.1)] transition-all duration-300 hover:shadow-[0_0_25px_rgba(204,43,94,0.5)]"
                   placeholder="Enter your email"
                 />
               </div>
             </div>
 
             <div className="space-y-1">
-              <label htmlFor="password" className={`block text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+              <label htmlFor="password" className="block text-xs text-gray-400">
                 Password
               </label>
               <div className="relative">
@@ -114,14 +105,15 @@ export default function LoginForm() {
                   required
                   value={formData.password}
                   onChange={handleChange}
-                  className={`w-full pl-10 pr-3 py-2 border ${theme === 'dark' ? 'border-gray-700 bg-black/30 text-white focus:ring-[#cc2b5e] shadow-[0_0_15px_rgba(204,43,94,0.1)] hover:shadow-[0_0_25px_rgba(204,43,94,0.5)]' : 'border-gray-300 bg-white text-gray-900 focus:ring-[#cc2b5e] shadow-md hover:shadow-lg'} rounded-lg focus:outline-none focus:ring-2 transition-all duration-300`}
+                  className="w-full pl-10 pr-3 py-2 border border-gray-700 bg-black/30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#cc2b5e] 
+                    shadow-[0_0_15px_rgba(204,43,94,0.1)] transition-all duration-300 hover:shadow-[0_0_25px_rgba(204,43,94,0.5)]"
                   placeholder="Enter your password"
                 />
               </div>
             </div>
 
             <div className="flex items-center justify-end">
-              <Link to="/forgot-password" className={`text-xs ${theme === 'dark' ? 'text-gray-400 hover:text-[#cc2b5e]' : 'text-gray-500 hover:text-[#cc2b5e]'} transition-colors duration-200`}>
+              <Link to="/forgot-password" className="text-xs text-gray-400 hover:text-[#cc2b5e] transition-colors duration-200">
                 Forgot Password?
               </Link>
             </div>
@@ -139,10 +131,10 @@ export default function LoginForm() {
             {/* Divider */}
             <div className="relative my-4">
               <div className="absolute inset-0 flex items-center">
-                <div className={`w-full border-t ${theme === 'dark' ? 'border-white/10' : 'border-gray-300'}`}></div>
+                <div className="w-full border-t border-white/10"></div>
               </div>
               <div className="relative flex justify-center text-xs">
-                <span className={`px-2 ${theme === 'dark' ? 'bg-[#0a0a0a] text-gray-400' : 'bg-gray-50 text-gray-500'}`}>Or continue with</span>
+                <span className="px-2 bg-[#0a0a0a] text-gray-400">Or continue with</span>
               </div>
             </div>
 
@@ -150,16 +142,16 @@ export default function LoginForm() {
             <button
               type="button"
               onClick={handleGoogleSignIn}
-              className={`w-full py-2 px-4 ${theme === 'dark' ? 'bg-white/5 hover:bg-white/10 border-white/10 text-white' : 'bg-white hover:bg-gray-50 border-gray-300 text-gray-700'} border rounded-lg 
-                text-sm transition-all duration-200 flex items-center justify-center gap-2
-                focus:outline-none focus:ring-2 focus:ring-[#cc2b5e]`}
+              className="w-full py-2 px-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg 
+                text-white text-sm transition-all duration-200 flex items-center justify-center gap-2
+                focus:outline-none focus:ring-2 focus:ring-[#cc2b5e]"
             >
               <FcGoogle className="w-4 h-4" />
               Sign in with Google
             </button>
 
             {/* Sign Up Link */}
-            <p className={`text-center text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+            <p className="text-center text-xs text-gray-400">
               Don't have an account?{" "}
               <Link to="/signup" className="font-medium text-[#cc2b5e] hover:text-[#753a88] transition-colors duration-200">
                 Sign up 
