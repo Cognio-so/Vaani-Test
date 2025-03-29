@@ -889,8 +889,8 @@ const ChatContainer = () => {
                 </div>
               </div>
               
-              {/* For active conversation */}
-              <div className="w-full flex-shrink-0 px-3 xs:px-4 sm:px-8 pb-2 mb-1 sm:mb-2 z-20 sticky bottom-0 bg-[#0a0a0a] mobile-input-container">
+              {/* Mobile input container with correct class */}
+              <div className="w-full flex-shrink-0 px-3 xs:px-4 sm:px-8 pb-2 mb-1 sm:mb-2 z-20 sticky bottom-0 bg-[#0a0a0a] md:bg-[#0a0a0a] mobile-input-container md:!static md:!p-inherit">
                 <MessageInput 
                   onSendMessage={handleSendMessage} 
                   isLoading={isLoading}
@@ -904,8 +904,7 @@ const ChatContainer = () => {
             </div>
           ) : (
             <div className="flex-1 flex flex-col overflow-hidden h-full">
-              {/* Welcome content with centered input for empty state */}
-              <div className="flex-1 overflow-y-auto px-4 pt-10 pb-2 flex flex-col items-center justify-center -mt-6 sm:-mt-8">
+              <div className="flex-1 overflow-y-auto px-4 pt-10 pb-2 flex flex-col items-center justify-center -mt-6 sm:-mt-8 messages-container">
                 <div className="items-center text-center w-full transition-all duration-300 
                   max-w-sm sm:max-w-xl md:max-w-2xl lg:max-w-3xl">
                   <h1 className="text-xl sm:text-3xl font-bold text-[#cc2b5e]">Welcome to Vaani.pro</h1>
@@ -955,8 +954,7 @@ const ChatContainer = () => {
                 </div>
               </div>
               
-              {/* For empty state - Also reduce padding */}
-              <div className="md:hidden w-full flex-shrink-0 px-3 xs:px-4 sm:px-8 pb-2 mb-1 sm:mb-2 z-20 sticky bottom-0 bg-[#0a0a0a]">
+              <div className="md:hidden w-full flex-shrink-0 px-3 xs:px-4 sm:px-8 pb-2 mb-1 sm:mb-2 z-20 sticky bottom-0 bg-[#0a0a0a] mobile-input-container">
                 <MessageInput 
                   onSendMessage={handleSendMessage}
                   isLoading={isLoading}
