@@ -1369,7 +1369,7 @@ const ChatContainer = () => {
   };
 
   return (
-    <div className={`relative h-screen flex flex-col ${theme === 'dark' ? 'bg-custom-gradient' : 'bg-white'} px-2 sm:px-4 md:px-6 py-2 sm:py-4 overflow-hidden`}>
+    <div className="flex flex-col h-screen">
       {isHistoryOpen && (
         <div className={`fixed inset-0 ${theme === 'dark' ? 'bg-[#1a1a1a]' : 'bg-gray-100'} z-50`}>
           <ChatHistory 
@@ -1679,18 +1679,6 @@ const ChatContainer = () => {
                   )}
                 </div>
               </div>
-              
-              <div className="mt-auto pb-3 w-full px-0">
-                <MessageInput 
-                  onSendMessage={handleSendMessage} 
-                  isLoading={isLoading}
-                  setIsLoading={setIsLoading}
-                  onMediaRequested={handleMediaRequested}
-                  onModelChange={handleModelChange}
-                  onOptionsChange={handleInputOptionsChange}
-                  selectedModel={model}
-                />
-              </div>
             </div>
           ) : (
             <div className={`h-full flex-1 flex flex-col ${theme === 'dark' ? 'bg-black' : 'bg-white'} px-2 sm:px-4 md:px-6 py-2 sm:py-4 items-center overflow-hidden`}>
@@ -1743,22 +1731,22 @@ const ChatContainer = () => {
                   </div>
                 </div>
               </div>
-              
-              {/* Mobile MessageInput at bottom */}
-              <div className="md:hidden w-full mt-auto pb-2 z-10">
-                <MessageInput 
-                  onSendMessage={handleSendMessage}
-                  isLoading={isLoading}
-                  setIsLoading={setIsLoading}
-                  onMediaRequested={handleMediaRequested}
-                  onModelChange={handleModelChange}
-                  onOptionsChange={handleInputOptionsChange}
-                  selectedModel={model}
-                />
-              </div>
             </div>
           )}
         </main>
+      </div>
+      
+      {/* Fixed MessageInput at bottom with proper z-index */}
+      <div className="fixed bottom-0 left-0 right-0 z-10 px-2 sm:px-4 pb-2 sm:pb-4">
+        <MessageInput 
+          onSendMessage={handleSendMessage}
+          isLoading={isLoading}
+          setIsLoading={setIsLoading}
+          onMediaRequested={handleMediaRequested}
+          onModelChange={handleModelChange}
+          onOptionsChange={handleInputOptionsChange}
+          selectedModel={model}
+        />
       </div>
     </div>
   )
