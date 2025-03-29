@@ -177,7 +177,7 @@ const MessageInput = ({ onSendMessage, isLoading, setIsLoading, onMediaRequested
                 <textarea
                     ref={textareaRef}
                     placeholder='Ask me anything...'
-                    className={`w-full py-1 xs:py-2 mb-6 xs:mb-7 sm:mb-8 bg-transparent outline-none text-xs xs:text-sm sm:text-base resize-none overflow-y-auto scrollbar-hide min-h-[36px] xs:min-h-[40px] sm:min-h-[48px] max-h-28 xs:max-h-32 sm:max-h-40 ${
+                    className={`w-full py-1 xs:py-1.5 sm:py-2 mb-5 xs:mb-6 sm:mb-8 bg-transparent outline-none text-xs xs:text-sm sm:text-base resize-none overflow-y-auto scrollbar-hide min-h-[32px] xs:min-h-[36px] sm:min-h-[48px] max-h-24 xs:max-h-28 sm:max-h-40 ${
                         theme === 'dark' ? 'placeholder-gray-400' : 'placeholder-gray-500'
                     }`}
                     rows={1}

@@ -804,7 +804,7 @@ const ChatContainer = () => {
           
           {hasActiveConversation ? (
             <div className="flex-1 flex flex-col overflow-hidden h-full">
-              <div className="flex-1 overflow-y-auto px-0 pt-12 pb-4 scroll-smooth min-h-0"
+              <div className="flex-1 overflow-y-auto px-0 pt-12 pb-4 scroll-smooth min-h-0 messages-container"
                 style={{ 
                   msOverflowStyle: "none", 
                   scrollbarWidth: "none",
@@ -889,8 +889,8 @@ const ChatContainer = () => {
                 </div>
               </div>
               
-              {/* For active conversation - Reduce padding on mobile */}
-              <div className="w-full flex-shrink-0 px-3 xs:px-4 sm:px-8 pb-2 mb-1 sm:mb-2 z-20 sticky bottom-0 bg-[#0a0a0a]">
+              {/* For active conversation */}
+              <div className="w-full flex-shrink-0 px-3 xs:px-4 sm:px-8 pb-2 mb-1 sm:mb-2 z-20 sticky bottom-0 bg-[#0a0a0a] mobile-input-container">
                 <MessageInput 
                   onSendMessage={handleSendMessage} 
                   isLoading={isLoading}
