@@ -804,14 +804,7 @@ const ChatContainer = () => {
           
           {hasActiveConversation ? (
             <div className="flex-1 flex flex-col overflow-hidden h-full">
-              <div className="flex-1 overflow-y-auto px-0 pt-12 pb-0 scroll-smooth min-h-0 messages-container"
-                style={{ 
-                  msOverflowStyle: "none", 
-                  scrollbarWidth: "none",
-                  WebkitOverflowScrolling: "touch",
-                  willChange: 'transform'
-                }}
-              >
+              <div className="flex-1 overflow-y-auto px-0 pt-12 scroll-smooth min-h-0 scrollbar-hide pb-16 sm:pb-4">
                 <div className="w-full max-w-[95%] xs:max-w-[90%] sm:max-w-3xl md:max-w-3xl mx-auto">
                   {messages.map((msg, index) => {
                     const displayContent = msg.role === 'assistant' 
@@ -890,7 +883,7 @@ const ChatContainer = () => {
               </div>
               
               {/* Fixed position input container with proper margins */}
-              <div className="w-full flex-shrink-0 px-3 xs:px-4 sm:px-8 py-2 pb-4 mb-0 z-20 sticky bottom-0 bg-[#0a0a0a]">
+              <div className="w-full flex-shrink-0 px-3 xs:px-4 sm:px-8 py-2 pb-4 mb-2 z-20 sticky bottom-0 bg-[#0a0a0a]">
                 <MessageInput 
                   onSendMessage={handleSendMessage} 
                   isLoading={isLoading}
@@ -954,7 +947,7 @@ const ChatContainer = () => {
               </div>
               
               {/* Mobile input for empty state with proper positioning */}
-              <div className="md:hidden w-full flex-shrink-0 px-3 xs:px-4 sm:px-8 py-2 pb-4 mb-0 z-20 sticky bottom-0 bg-[#0a0a0a]">
+              <div className="md:hidden w-full flex-shrink-0 px-3 xs:px-4 sm:px-8 py-2 pb-4 mb-0 z-20 sticky bottom-0">
                 <MessageInput 
                   onSendMessage={handleSendMessage}
                   isLoading={isLoading}

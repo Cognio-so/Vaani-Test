@@ -64,9 +64,9 @@ function AppRoutes() {
     <Routes>
       <Route path='/' element={<HomePage />} />
       <Route path='/chat' element={
-        // <ProtectedRoute>
+         <ProtectedRoute>
           <ChatPage />
-        // </ProtectedRoute>
+         </ProtectedRoute>
       } />
       <Route path='/signup' element={<SignupPage />} />
       <Route path='/login' element={<LoginPage />} />

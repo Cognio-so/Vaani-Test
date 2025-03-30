@@ -168,7 +168,7 @@ const MessageInput = ({ onSendMessage, isLoading, setIsLoading, onMediaRequested
     const ModelIcon = currentModel ? currentModel.icon : RiSparkling2Fill;
 
     return (
-        <form onSubmit={handleSendMessage} className='w-full max-w-full xs:max-w-[94%] sm:max-w-[90%] md:max-w-3xl mx-auto mb-safe'>
+        <form onSubmit={handleSendMessage} className='w-full max-w-full xs:max-w-[94%] sm:max-w-[90%] md:max-w-3xl mx-auto mb-safe pb-1 sm:pb-0'>
             <div className={`relative rounded-lg sm:rounded-xl ${
                 theme === 'dark' 
                   ? 'bg-white/[0.2] backdrop-blur-xl text-white shadow-[0_0_15px_rgba(204,43,94,0.3)] hover:shadow-[0_0_20px_rgba(204,43,94,0.5)]' 
