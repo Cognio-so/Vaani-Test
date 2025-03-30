@@ -586,12 +586,10 @@ const ChatContainer = () => {
     }, []);
 
     const handleMediaLoaded = useCallback(() => {
-        // Add a small delay to ensure the media is fully rendered
-        setTimeout(() => {
-            setIsGeneratingMedia(false);
-            setGeneratingMediaType(null);
-            setMediaType(null);
-        }, 500);
+        // Remove the setTimeout and clear states immediately
+        setIsGeneratingMedia(false);
+        setGeneratingMediaType(null);
+        setMediaType(null);
     }, []);
 
 
@@ -621,9 +619,8 @@ const ChatContainer = () => {
                      <div className="absolute top-0 left-0 right-0 h-14 sm:h-16 flex items-center justify-center md:hidden z-20 pointer-events-none"><div className="flex items-center pointer-events-auto"><img src="/vannipro.png" alt="Vaani.pro Logo" className="h-6 sm:h-8" /><h1 className="text-sm sm:text-lg font-bold ml-2 text-[#cc2b5e]">Vaani.pro</h1></div></div>
                      <div className="absolute top-4 right-4 sm:right-6 z-30 flex items-center"><div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden border-2 border-pink-500/50"><img src={user?.profilePicture || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23cc2b5e'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/%3E%3C/svg%3E"} alt={user?.name || "Profile"} className="w-full h-full object-cover" onError={(e) => { e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23cc2b5e'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/%3E%3C/svg%3E"; }}/></div></div>
 
-                    {/* --- Content Area (Scrollable) --- */}
-                    {/* INCREASED PADDING AGAIN vvvvvvvvvvvvvvv */}
-                    <div className="flex-1 overflow-y-auto scroll-smooth min-h-0 scrollbar-hide px-0 pb-20 sm:pb-24"> {/* ADJUSTED PADDING HERE */}
+                    {/* Content Area (Scrollable) */}
+                    <div className="flex-1 overflow-y-auto scroll-smooth min-h-0 scrollbar-hide px-0 pb-28"> {/* Adjusted padding bottom for input */}
                         <div className="w-full max-w-[95%] xs:max-w-[90%] sm:max-w-3xl md:max-w-3xl mx-auto pt-4 md:pt-6">
                             {hasActiveConversation ? (
                                 <>
@@ -644,7 +641,7 @@ const ChatContainer = () => {
                                                           content={msg.content}
                                                           forceImageDisplay={true}
                                                           forceAudioDisplay={true}
-                                                          onMediaLoaded={isLastMessage ? handleMediaLoaded : undefined}
+                                                          onMediaLoaded={isLastMessage && isGeneratingMedia ? handleMediaLoaded : undefined}
                                                           isStreaming={isStreaming}
                                                           agentStatus={isLastMessage ? msg.agentStatus : undefined}
                                                        />
@@ -684,7 +681,7 @@ const ChatContainer = () => {
                                      </div>
                                 </>
                             ) : (
-                                <div className="flex flex-col items-center justify-center text-center min-h-[calc(100vh-10rem)] mx-auto">
+                                <div className="flex flex-col items-center justify-center text-center min-h-[calc(100vh-16rem)] mx-auto"> {/* Adjusted min-height */}
                                     <h1 className="text-xl sm:text-3xl font-bold text-[#cc2b5e]">Welcome to Vaani.pro</h1>
                                     <p className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'} text-sm sm:text-xl mt-1 sm:mt-2`}>How may I help you?</p>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 max-w-5xl mx-auto mt-6 sm:mt-8 px-2 w-full">
@@ -710,14 +707,12 @@ const ChatContainer = () => {
                     </div>
 
 
-                    {/* --- Input Container (FIXED POSITION) --- */}
-                    {/* REMOVED mb-* classes vvvvvvvvv */}
-                    <div className={`w-full mx-auto flex-shrink-0 py-1 z-10 fixed bottom-0 transition-all duration-300 
+                    {/* Input Container (Fixed Position) */}
+                    <div className={`w-full mx-auto flex-shrink-0 py-2 z-10 fixed bottom-0 transition-all duration-300 
                            ${theme === 'dark' ? 'bg-black' : 'bg-white'}
-                           ${isSidebarVisible ? 'left-14 sm:left-16 lg:left-64 right-2 sm:right-3' : 'left-2 sm:left-3 right-2 sm:right-3'}
-                            w-auto shadow-xl
-                          `}>
-                         <div className="w-full px-2 sm:px-3">
+                           ${isSidebarVisible ? 'left-14 sm:left-16 lg:left-32 right-0' : 'left-0 right-0'}
+                            ${theme === 'dark' ? 'border-white/10' : 'border-gray-200'}`}>
+                         <div className="w-full max-w-[95%] xs:max-w-[90%] sm:max-w-3xl md:max-w-3xl mx-auto px-2 sm:px-3">
                            <MessageInput
                                 onSendMessage={handleSendMessage}
                                 isLoading={isLoading || isLoadingChat}

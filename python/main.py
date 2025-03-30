@@ -349,12 +349,15 @@ async def chat(request: ChatRequest, background_tasks: BackgroundTasks):
 
 # Add the streaming function for the chat endpoint
 async def stream_chat_response(messages, model, thread_id, use_agent, deep_research, file_url):
-    """Generate a streaming response for chat."""
     try:
-        # Initial status update with no delay
-        yield json.dumps({"type": "status", "status": "Processing..."}) + "\n"
-        
-        # Model client validation (keep existing code)
+        # Remove initial delay/status for non-agent conversations
+        if not use_agent and not deep_research:
+            # Skip initial status update for regular chat
+            pass
+        else:
+            yield json.dumps({"type": "status", "status": "Processing..."}) + "\n"
+
+        # Model client validation
         if model not in MODEL_CLIENTS:
             logger.warning(f"Model {model} not found in available models: {list(MODEL_CLIENTS.keys())}")
             if not MODEL_CLIENTS:
@@ -371,11 +374,45 @@ async def stream_chat_response(messages, model, thread_id, use_agent, deep_resea
             model = next(iter(MODEL_CLIENTS.keys()))
             logger.warning(f"Falling back to: {model}")
         
-        # Get the model client (already configured with streaming=True)
         model_client = MODEL_CLIENTS[model]()
-        logger.info(f"Using streaming-enabled model: {model}")
         
-        if use_agent:
+        if not use_agent:
+            # Direct model conversation with optimized streaming
+            try:
+                if hasattr(model_client, "astream"):
+                    stream = model_client.astream(messages)
+                    async for chunk in stream:
+                        chunk_content = ""
+                        if hasattr(chunk, "content") and chunk.content:
+                            chunk_content = chunk.content
+                        elif isinstance(chunk, dict) and "content" in chunk:
+                            chunk_content = chunk["content"]
+                        elif hasattr(chunk, "delta") and hasattr(chunk.delta, "content"):
+                            chunk_content = chunk.delta.content
+                        
+                        if chunk_content:
+                            # Remove delay for regular chat to reduce latency
+                            yield json.dumps({
+                                "type": "chunk",
+                                "chunk": chunk_content,
+                                "thread_id": thread_id
+                            }) + "\n"
+                    
+                    yield json.dumps({
+                        "type": "done",
+                        "thread_id": thread_id
+                    }) + "\n"
+                    return
+                
+            except Exception as model_error:
+                logger.error(f"Error in model processing: {model_error}", exc_info=True)
+                yield json.dumps({
+                    "type": "result",
+                    "message": {"role": "assistant", "content": f"Error: {str(model_error)}"},
+                    "thread_id": thread_id
+                }) + "\n"
+        
+        else:
             # For agent, we need a different approach since agents don't natively stream
             yield json.dumps({"type": "status", "status": "Running agent..."}) + "\n"
             
@@ -461,50 +498,6 @@ async def stream_chat_response(messages, model, thread_id, use_agent, deep_resea
                 yield json.dumps({
                     "type": "result",
                     "message": {"role": "assistant", "content": f"I encountered an error with the AI agent: {str(invoke_error)}"},
-                    "thread_id": thread_id
-                }) + "\n"
-        
-        else:
-            # Direct model conversation with real streaming
-            try:
-                # Choose streaming method based on available API
-                if hasattr(model_client, "astream") and callable(getattr(model_client, "astream")):
-                    logger.info(f"Using astream for {model}")
-                    stream = model_client.astream(messages)
-                    
-                    # Process tokens individually instead of accumulating
-                    async for chunk in stream:
-                        # Extract content based on model response format
-                        chunk_content = ""
-                        if hasattr(chunk, "content") and chunk.content:
-                            chunk_content = chunk.content
-                        elif isinstance(chunk, dict) and "content" in chunk:
-                            chunk_content = chunk["content"]
-                        elif hasattr(chunk, "delta") and hasattr(chunk.delta, "content") and chunk.delta.content:
-                            chunk_content = chunk.delta.content
-                        
-                        if chunk_content:
-                            # Send each chunk immediately as it arrives without accumulating
-                            yield json.dumps({
-                                "type": "chunk",
-                                "chunk": chunk_content,
-                                "thread_id": thread_id
-                            }) + "\n"
-                            # MODIFIED: Decreased delay to 0.005-0.015s (2x faster)
-                            await asyncio.sleep(random.uniform(0.005, 0.015))
-                    
-                    # Send final result signal (frontend will have accumulated the full message)
-                    yield json.dumps({
-                        "type": "done",
-                        "thread_id": thread_id
-                    }) + "\n"
-                    return
-                
-            except Exception as model_error:
-                logger.error(f"Error in model processing: {model_error}", exc_info=True)
-                yield json.dumps({
-                    "type": "result",
-                    "message": {"role": "assistant", "content": f"I encountered an error with the {model} model: {str(model_error)}"},
                     "thread_id": thread_id
                 }) + "\n"
     

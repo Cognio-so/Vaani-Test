@@ -109,22 +109,8 @@ const MessageInput = ({ onSendMessage, isLoading, setIsLoading, onMediaRequested
             is_research: deepResearch
         };
         
-        // Clear input immediately for better perceived performance
+        // Clear input and file immediately
         setMessage('');
-        adjustHeight();
-        
-        // Optimize response by setting highest priority for streaming
-        onSendMessage(userMessage, {
-            model: internalModel,
-            file_url: uploadedFilePath,
-            use_agent: useAgent,
-            deep_research: deepResearch,
-            is_research: deepResearch,
-            stream: true,  // Always use streaming for faster response display
-            priority: 'high' // Add priority flag
-        });
-        
-        // Clear file upload if any
         if (uploadedFile) {
             setUploadedFile(null);
             setUploadedFilePath(null);
@@ -132,6 +118,19 @@ const MessageInput = ({ onSendMessage, isLoading, setIsLoading, onMediaRequested
                 fileInputRef.current.value = "";
             }
         }
+        adjustHeight();
+        
+        // Optimize for regular chat vs agent/research
+        const options = {
+            model: internalModel,
+            file_url: uploadedFilePath,
+            use_agent: useAgent,
+            deep_research: deepResearch,
+            stream: true,
+            priority: useAgent || deepResearch ? 'normal' : 'high' // Prioritize regular chat
+        };
+        
+        onSendMessage(userMessage, options);
     };
 
     const handleGlobeClick = () => {
