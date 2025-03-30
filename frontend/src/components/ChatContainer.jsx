@@ -947,7 +947,7 @@ const ChatContainer = () => {
               </div>
               
               {/* Mobile input for empty state with proper positioning */}
-              <div className="md:hidden w-full flex-shrink-0 px-3 xs:px-4 sm:px-8 py-2 pb-4 xs:pb-10 mb-10 z-20 sticky bottom-0">
+              <div className="md:hidden w-full flex-shrink-0 px-3 xs:px-4 sm:px-8 py-2 pb-4 xs:pb-6 mb-safe z-20 sticky bottom-0">
                 <MessageInput 
                   onSendMessage={handleSendMessage}
                   isLoading={isLoading}
