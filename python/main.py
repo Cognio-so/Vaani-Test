@@ -48,7 +48,7 @@ app = FastAPI(title="Vaani.pro API")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "https://smith-frontend.vercel.app",
+        "https://vanni-test-frontend.vercel.app",
         "http://localhost:5173", 
         "http://localhost:5174",
     ],
