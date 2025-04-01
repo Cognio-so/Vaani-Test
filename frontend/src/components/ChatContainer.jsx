@@ -640,8 +640,8 @@ const ChatContainer = () => {
                     </div>
 
                     {/* Content Area (Scrollable) */}
-                    <div className="flex-1 overflow-y-auto scroll-smooth min-h-0 scrollbar-hide px-0 pb-28"> {/* Adjusted padding bottom for input */}
-                        <div className="w-full max-w-[95%] xs:max-w-[90%] sm:max-w-3xl md:max-w-3xl mx-auto pt-4 md:pt-6">
+                    <div className={`flex-1 overflow-y-auto scroll-smooth min-h-0 scrollbar-hide px-0 pb-28 ${!hasActiveConversation ? 'flex items-center justify-center' : ''}`}> {/* Keep centering for the overall block */}
+                        <div className={`w-full max-w-[95%] xs:max-w-[90%] sm:max-w-3xl md:max-w-3xl mx-auto pt-4 md:pt-6 ${!hasActiveConversation ? 'flex flex-col items-center' : ''}`}> {/* Center content *within* this block */}
                             {hasActiveConversation ? (
                                 <>
                                     {messages.map((msg, index) => {
@@ -701,7 +701,7 @@ const ChatContainer = () => {
                                     </div>
                                 </>
                             ) : (
-                                <div className="flex flex-col items-center justify-center text-center min-h-[calc(100vh-24rem)] mx-auto">
+                                <div className="flex flex-col items-center justify-center text-center w-full"> {/* Ensure this container takes full width */}
                                     <h1 className="text-xl sm:text-3xl font-bold text-[#cc2b5e]">Welcome to Vaani.pro</h1>
                                     <p className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'} text-sm sm:text-xl mt-1 sm:mt-2`}>How may I help you?</p>
 
@@ -722,6 +722,7 @@ const ChatContainer = () => {
                                         ))}
                                     </div>
 
+                                    {/* --- Add MessageInput back here for the welcome screen --- */}
                                     <div className="w-full max-w-[95%] xs:max-w-[90%] sm:max-w-3xl md:max-w-3xl mx-auto mt-8">
                                         <MessageInput
                                             onSendMessage={handleSendMessage}
@@ -733,6 +734,7 @@ const ChatContainer = () => {
                                             selectedModel={model}
                                         />
                                     </div>
+                                    {/* --- End of added MessageInput --- */}
                                 </div>
                             )}
                             <div ref={messagesEndRef} className="h-1" />
@@ -740,10 +742,10 @@ const ChatContainer = () => {
                     </div>
 
 
-                    {/* Input Container (Fixed Position) */}
+                    {/* Input Container (Fixed Position) - Keep this conditional */}
                     {hasActiveConversation && (
                         <div className="w-full bottom-0 sticky z-10">
-                            <div className={`w-full mx-auto flex-shrink-0 py-2 
+                            <div className={`w-full mx-auto flex-shrink-0 py-2
                                    ${theme === 'dark' ? 'bg-black' : 'bg-white'}
                                    ${theme === 'dark' ? 'border-white/10' : 'border-gray-200'}`}>
                                 <MessageInput
