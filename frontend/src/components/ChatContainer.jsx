@@ -605,9 +605,9 @@ const ChatContainer = () => {
 
 
     const predefinedPrompts = [
-        { id: 1, title: "General Assistant", prompt: "Hi! What can you help me with?" },
-        { id: 2, title: "Writing Help", prompt: "Help me improve my writing." },
-        { id: 3, title: "Code Assistant", prompt: "Explain how you can assist with coding." }
+        { id: 1, title: "General Assistant", prompt: "Hi there! Can you tell me about the different ways you can help me today?" },
+        { id: 2, title: "Writing Help", prompt: "I need help improving a piece of writing. Can you review it for clarity, grammar, and style?" },
+        { id: 3, title: "Code Assistant", prompt: "Explain how you can assist with coding tasks, like debugging, writing snippets, or explaining concepts." }
     ];
     const handlePromptClick = (item) => {
         handleSendMessage({ content: item.prompt }, { model, use_agent: useAgent, deep_research: deepResearch });
@@ -733,7 +733,7 @@ const ChatContainer = () => {
                                     </div>
 
                                     {/* --- MessageInput for DESKTOP Welcome Screen ONLY --- */}
-                                    <div className="hidden md:block w-full max-w-[95%] xs:max-w-[90%] sm:max-w-3xl md:max-w-3xl mx-auto mt-8">
+                                    <div className="hidden md:block w-full max-w-[95%] xs:max-w-[90%] sm:max-w-3xl md:max-w-3xl mx-auto mt-1">
                                         <MessageInput
                                             onSendMessage={handleSendMessage}
                                             isLoading={isLoading || isLoadingChat}
