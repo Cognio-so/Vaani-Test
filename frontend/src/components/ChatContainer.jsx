@@ -640,10 +640,9 @@ const ChatContainer = () => {
                     </div>
 
                     {/* Content Area (Scrollable) */}
-                    {/* Increased bottom padding again */}
-                    <div className={`flex-1 overflow-y-auto scroll-smooth min-h-0 scrollbar-hide px-0 ${
+                    <div className={`flex-1 overflow-y-auto scroll-smooth min-h-0 px-0 ${
                         hasActiveConversation
-                            ? 'pb-32 md:pb-32' // Further Increased Padding
+                            ? 'pb-2' // Reduced padding from pb-32
                             : 'flex items-center justify-center'
                     }`}>
                         {/* This inner container ONLY needs width/margin/padding. Centering is handled by parent. */}

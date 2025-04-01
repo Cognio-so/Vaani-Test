@@ -207,20 +207,32 @@ const MessageContent = ({ content }) => {
   // Extract sources from content
   const sources = extractSources(content);
   
-  // Remove URLs at the end of text for clean display
+  // Remove URLs and the "Sources:" block from the text
   let cleanedText = text;
   if (sources.length > 0) {
-    // Remove URLs from the end of the content
+    // 1. Remove the source URLs themselves first to avoid interfering with block removal
     sources.forEach(source => {
-      cleanedText = cleanedText.replace(source.url, '');
+      // Escape URL for regex and handle potential markdown links `[text](url)`
+      const escapedUrl = source.url.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+      const urlRegex = new RegExp(`\\s?\\[?${escapedUrl}\\]?\\(?${escapedUrl}\\)?`, 'g');
+      cleanedText = cleanedText.replace(urlRegex, '');
     });
+
+    // 2. Remove the "Sources:" section and any subsequent list items more robustly
+    // First handle plain text "Sources:" (like in the screenshot)
+    cleanedText = cleanedText.replace(/^Sources:\s*$/m, '');
     
-    // Remove "Sources:" section and bullet points completely
-    cleanedText = cleanedText.replace(/\n\n\*\*Sources:\*\*\n(•.*\n?)+/g, '');
-    cleanedText = cleanedText.replace(/Sources:(\s|\n)*(•\s*\n*)*$/g, '');
+    // Also handle markdown formatted "**Sources:**"
+    cleanedText = cleanedText.replace(/^\*\*Sources:\*\*\s*$/m, '');
     
-    // Clean up any empty lines at the end
-    cleanedText = cleanedText.replace(/\n+$/g, '');
+    // 3. Remove bullet point lists that follow the sources section
+    cleanedText = cleanedText.replace(/^[•⦁⚫⚪◦◯○⊙⊚⊛⦿◆◇◈♦♢\-\*]\s+.*$/gm, '');
+    
+    // 4. Remove empty lines that may be left
+    cleanedText = cleanedText.replace(/\n{2,}/g, '\n\n');
+    
+    // 5. Trim trailing whitespace/newlines
+    cleanedText = cleanedText.trim();
   }
   
   const handleImageDownload = (url) => {
