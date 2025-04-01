@@ -209,6 +209,7 @@ const MessageContent = ({ content }) => {
   // Extract media
   const { text, imageUrls, musicUrls } = extractMediaUrls(content);
   
+  // COMPLETE REMOVAL of sources section with a nuclear approach
   // COMPLETE REMOVAL of sources section with a much more direct approach
   let cleanedText = text;
   

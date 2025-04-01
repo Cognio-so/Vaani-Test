@@ -640,7 +640,8 @@ const ChatContainer = () => {
                     </div>
 
                     {/* Content Area (Scrollable) */}
-                    <div className={`flex-1 overflow-y-auto scroll-smooth min-h-0 px-0 ${
+                    {/* Reduced bottom padding */}
+                    <div className={`flex-1 overflow-y-auto scroll-smooth min-h-0 scrollbar-hide px-0 ${
                         hasActiveConversation
                             ? 'pb-2' // Reduced padding from pb-32
                             : 'flex items-center justify-center'
@@ -754,8 +755,8 @@ const ChatContainer = () => {
                     {/* Input Container (Fixed Position) */}
                     {/* Removed border-t classes */}
                     {/* The top border (border-t) IS applied to this outer div */}
-                    <div className={`w-full bottom-0 sticky z-10 ${!hasActiveConversation ? 'md:hidden' : 'block'}
-                           py-2 pb-safe ${theme === 'dark' ? 'bg-black' : 'bg-white '}`}>
+                    <div className={`w-full bottom-0 sticky z-10 px-4 ${!hasActiveConversation ? 'md:hidden' : 'block'}
+                           py-2 pb-safe mb-4 ${theme === 'dark' ? 'bg-black' : 'bg-white '}`}>
                         {/* This inner div should NOT have the border-t class */}
                         <div className={`w-full mx-auto flex-shrink-0`}>
                             <MessageInput

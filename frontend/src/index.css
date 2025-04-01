@@ -2,10 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Hide scrollbar for entire site */
+/* Allow scrolling on root elements */
 html,body, #root {
   height: 100%;
-  overflow: hidden;
 }
 
 html, body {
