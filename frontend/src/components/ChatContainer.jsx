@@ -617,7 +617,7 @@ const ChatContainer = () => {
 
     // --- JSX Structure ---
     return (
-        <div className={`flex flex-col h-screen w-full overflow-hidden ${theme === 'dark' ? 'bg-black' : 'bg-white'}`}>
+        <div className={`flex flex-col h-[100dvh] w-full overflow-hidden ${theme === 'dark' ? 'bg-black' : 'bg-white'}`}>
             {isHistoryOpen && (<div className={`fixed inset-0 z-[150] ${theme === 'dark' ? 'bg-black' : 'bg-white '}`}><ChatHistory isOpen={isHistoryOpen} onClose={() => setIsHistoryOpen(false)} conversations={conversations} onSelectConversation={loadChat} isLoading={isLoadingChat} /></div>)}
             {isSettingsOpen && (<div className={`fixed inset-0 z-[200] ${theme === 'dark' ? 'bg-black' : 'bg-white '}`}><Settings isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} onClearConversation={clearConversation} /></div>)}
 
@@ -640,15 +640,15 @@ const ChatContainer = () => {
                     </div>
 
                     {/* Content Area (Scrollable) */}
-                    {/* Increased bottom padding */}
+                    {/* Increased bottom padding again */}
                     <div className={`flex-1 overflow-y-auto scroll-smooth min-h-0 scrollbar-hide px-0 ${
                         hasActiveConversation
-                            ? 'pb-28 md:pb-28' // Increased Padding when chat is active (mobile and desktop)
-                            : 'flex items-center justify-center' // Centering when no chat
+                            ? 'pb-32 md:pb-32' // Further Increased Padding
+                            : 'flex items-center justify-center'
                     }`}>
                         {/* This inner container ONLY needs width/margin/padding. Centering is handled by parent. */}
                         <div className={`w-full max-w-[95%] xs:max-w-[90%] sm:max-w-3xl md:max-w-3xl mx-auto pt-4 md:pt-6 ${
-                            !hasActiveConversation ? 'text-center' : '' // Add text-center for welcome screen alignment
+                            !hasActiveConversation ? 'text-center' : ''
                         }`}>
                             {hasActiveConversation ? (
                                 <>
@@ -753,11 +753,10 @@ const ChatContainer = () => {
 
 
                     {/* Input Container (Fixed Position) */}
-                    {/* Apply background, border, and padding directly to the sticky container */}
+                    {/* Added pb-safe for iOS bottom bar */}
                     <div className={`w-full bottom-0 sticky z-10 ${!hasActiveConversation ? 'md:hidden' : 'block'}
-                           py-2 ${theme === 'dark' ? 'bg-black ' : 'bg-white'}`}>
+                           py-2 pb-safe ${theme === 'dark' ? 'bg-black border-t border-white/10' : 'bg-white border-t border-gray-200'}`}>
                         <div className={`w-full mx-auto flex-shrink-0`}>
-                             {/* Removed padding and background/border from here */}
                             <MessageInput
                                 onSendMessage={handleSendMessage}
                                 isLoading={isLoading || isLoadingChat}
