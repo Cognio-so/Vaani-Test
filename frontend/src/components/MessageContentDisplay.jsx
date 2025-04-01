@@ -202,39 +202,34 @@ const SourcesDropdown = ({ sources }) => {
 
 const MessageContent = ({ content }) => {
   const { theme } = useContext(ThemeContext);
+  // Extract media first
   const { text, imageUrls, musicUrls } = extractMediaUrls(content);
-  
-  // Extract sources from content
-  const sources = extractSources(content);
-  
-  // Remove URLs and the "Sources:" block from the text
-  let cleanedText = text;
-  if (sources.length > 0) {
-    // 1. Remove the source URLs themselves first to avoid interfering with block removal
-    sources.forEach(source => {
-      // Escape URL for regex and handle potential markdown links `[text](url)`
-      const escapedUrl = source.url.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-      const urlRegex = new RegExp(`\\s?\\[?${escapedUrl}\\]?\\(?${escapedUrl}\\)?`, 'g');
-      cleanedText = cleanedText.replace(urlRegex, '');
-    });
 
-    // 2. Remove the "Sources:" section and any subsequent list items more robustly
-    // First handle plain text "Sources:" (like in the screenshot)
-    cleanedText = cleanedText.replace(/^Sources:\s*$/m, '');
-    
-    // Also handle markdown formatted "**Sources:**"
-    cleanedText = cleanedText.replace(/^\*\*Sources:\*\*\s*$/m, '');
-    
-    // 3. Remove bullet point lists that follow the sources section
-    cleanedText = cleanedText.replace(/^[•⦁⚫⚪◦◯○⊙⊚⊛⦿◆◇◈♦♢\-\*]\s+.*$/gm, '');
-    
-    // 4. Remove empty lines that may be left
-    cleanedText = cleanedText.replace(/\n{2,}/g, '\n\n');
-    
-    // 5. Trim trailing whitespace/newlines
-    cleanedText = cleanedText.trim();
-  }
-  
+  // --- Important: Extract sources for the dropdown *before* cleaning the text ---
+  const sources = extractSources(text); // Use 'text' which is content without media URLs
+
+  // --- Clean the text for display ---
+  let cleanedText = text;
+
+  // Regex to find the "Sources:" block (plain or markdown) and all subsequent bullet points
+  // - (?:^|\n\n) : Matches the start of the string or after a blank line
+  // - \s* : Matches optional leading whitespace
+  // - (?:Sources:|\*\*Sources:\*\*) : Matches "Sources:" or "**Sources:**"
+  // - \s* : Matches optional whitespace after the header
+  // - ((?:\n\s*[*•-]\s+.*?)+) : Captures one or more lines starting with:
+  //   - \n : Newline
+  //   - \s* : Optional leading space/indentation
+  //   - [*•-] : A bullet point character (*, •, or -)
+  //   - \s+ : One or more spaces after the bullet
+  //   - .*? : Any characters non-greedily until the end of the line
+  // - /m : Multiline mode (so ^ matches start of lines)
+  const sourcesBlockRegex = /(?:^|\n\n)\s*(?:Sources:|\*\*Sources:\*\*)\s*((?:\n\s*[*•-]\s+.*?)+)/m;
+
+  cleanedText = cleanedText.replace(sourcesBlockRegex, '');
+
+  // Final trim for any leftover whitespace
+  cleanedText = cleanedText.trim();
+
   const handleImageDownload = (url) => {
     const xhr = new XMLHttpRequest();
     xhr.open('GET', url, true);
