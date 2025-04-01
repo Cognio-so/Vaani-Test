@@ -196,7 +196,7 @@ const ChatContainer = () => {
             const clearTimer = setTimeout(() => {
                 setGeneratingMediaType(null);
                 setMediaType(null);
-            }, 500);
+            }, 100);
             return () => clearTimeout(clearTimer);
         }
     }, [isGeneratingMedia, generatingMediaType, mediaType]);
@@ -586,7 +586,6 @@ const ChatContainer = () => {
     }, []);
 
     const handleMediaLoaded = useCallback(() => {
-        // Remove the setTimeout and clear states immediately
         setIsGeneratingMedia(false);
         setGeneratingMediaType(null);
         setMediaType(null);
@@ -615,7 +614,7 @@ const ChatContainer = () => {
 
                 <main className={`flex-1 flex flex-col h-full overflow-hidden transition-all duration-300 relative ${isSidebarVisible ? 'lg:ml-64 sm:ml-16 ml-14' : 'ml-0'}`}>
 
-                     <div className="md:hidden h-14 sm:h-16 flex-shrink-0 bg-white/80 dark:bg-[#0A0A0A]/80 backdrop-blur-sm z-10"></div>
+                     <div className="md:hidden h-14 sm:h-16 flex-shrink-0 bg-white/80  backdrop-blur-sm z-10"></div>
                      <div className="absolute top-0 left-0 right-0 h-14 sm:h-16 flex items-center justify-center md:hidden z-20 pointer-events-none"><div className="flex items-center pointer-events-auto"><img src="/vannipro.png" alt="Vaani.pro Logo" className="h-6 sm:h-8" /><h1 className="text-sm sm:text-lg font-bold ml-2 text-[#cc2b5e]">Vaani.pro</h1></div></div>
                      <div className="absolute top-4 right-4 sm:right-6 z-30 flex items-center"><div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden border-2 border-pink-500/50"><img src={user?.profilePicture || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23cc2b5e'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/%3E%3C/svg%3E"} alt={user?.name || "Profile"} className="w-full h-full object-cover" onError={(e) => { e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23cc2b5e'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/%3E%3C/svg%3E"; }}/></div></div>
 
@@ -681,24 +680,39 @@ const ChatContainer = () => {
                                      </div>
                                 </>
                             ) : (
-                                <div className="flex flex-col items-center justify-center text-center min-h-[calc(100vh-16rem)] mx-auto"> {/* Adjusted min-height */}
-                                    <h1 className="text-xl sm:text-3xl font-bold text-[#cc2b5e]">Welcome to Vaani.pro</h1>
-                                    <p className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'} text-sm sm:text-xl mt-1 sm:mt-2`}>How may I help you?</p>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 max-w-5xl mx-auto mt-6 sm:mt-8 px-2 w-full">
-                                        {predefinedPrompts.map((item) => (
-                                            <motion.div
-                                                key={item.id}
-                                                className={`group relative ${theme === 'dark' ? 'bg-white/[0.05] backdrop-blur-xl border border-white/20 hover:bg-white/[0.08] shadow-[0_0_15px_rgba(204,43,94,0.2)] hover:shadow-[0_0_20px_rgba(204,43,94,0.4)]' : 'bg-gray-100 border border-gray-200 hover:bg-gray-200 shadow-md hover:shadow-lg'} rounded-xl p-4 cursor-pointer transition-all duration-150`}
-                                                whileHover={{ scale: 1.03, transition: { duration: 0.15 } }}
-                                                whileTap={{ scale: 0.98 }}
-                                                onClick={() => handlePromptClick(item)}
-                                             >
-                                                <div className="relative z-10">
-                                                    <h3 className={`${theme === 'dark' ? 'text-white/90' : 'text-gray-800'} font-medium text-sm mb-1`}>{item.title}</h3>
-                                                    <p className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'} text-xs line-clamp-2`}>{item.prompt}</p>
-                                                </div>
-                                            </motion.div>
-                                        ))}
+                                <div className="flex flex-col items-center justify-center min-h-[calc(100vh-8rem)] mx-auto px-4">
+                                    <div className="flex flex-col items-center justify-center text-center w-full max-w-[95%] xs:max-w-[90%] sm:max-w-3xl md:max-w-3xl">
+                                        <h1 className="text-xl sm:text-3xl font-bold text-[#cc2b5e]">Welcome to Vaani.pro</h1>
+                                        <p className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'} text-sm sm:text-xl mt-1 sm:mt-2`}>How may I help you?</p>
+                                        
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 max-w-5xl mx-auto mt-6 sm:mt-8 px-2 w-full">
+                                            {predefinedPrompts.map((item) => (
+                                                <motion.div
+                                                    key={item.id}
+                                                    className={`group relative ${theme === 'dark' ? 'bg-white/[0.05] backdrop-blur-xl border border-white/20 hover:bg-white/[0.08] shadow-[0_0_15px_rgba(204,43,94,0.2)] hover:shadow-[0_0_20px_rgba(204,43,94,0.4)]' : 'bg-gray-100 border border-gray-200 hover:bg-gray-200 shadow-md hover:shadow-lg'} rounded-xl p-4 cursor-pointer transition-all duration-150`}
+                                                    whileHover={{ scale: 1.03, transition: { duration: 0.15 } }}
+                                                    whileTap={{ scale: 0.98 }}
+                                                    onClick={() => handlePromptClick(item)}
+                                                >
+                                                    <div className="relative z-10">
+                                                        <h3 className={`${theme === 'dark' ? 'text-white/90' : 'text-gray-800'} font-medium text-sm mb-1`}>{item.title}</h3>
+                                                        <p className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'} text-xs line-clamp-2`}>{item.prompt}</p>
+                                                    </div>
+                                                </motion.div>
+                                            ))}
+                                        </div>
+                                        
+                                        <div className="w-full mt-8">
+                                            <MessageInput
+                                                onSendMessage={handleSendMessage}
+                                                isLoading={isLoading || isLoadingChat}
+                                                setIsLoading={setIsLoading}
+                                                onMediaRequested={handleMediaRequested}
+                                                onModelChange={handleModelChange}
+                                                onOptionsChange={handleInputOptionsChange}
+                                                selectedModel={model}
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             )}
@@ -708,22 +722,23 @@ const ChatContainer = () => {
 
 
                     {/* Input Container (Fixed Position) */}
-                    <div className={`w-full mx-auto flex-shrink-0 py-2 z-10 fixed bottom-0 transition-all duration-300 
-                           ${theme === 'dark' ? 'bg-black' : 'bg-white'}
-                           ${isSidebarVisible ? 'left-14 sm:left-16 lg:left-32 right-0' : 'left-0 right-0'}
-                            ${theme === 'dark' ? 'border-white/10' : 'border-gray-200'}`}>
-                         <div className="w-full max-w-[95%] xs:max-w-[90%] sm:max-w-3xl md:max-w-3xl mx-auto px-2 sm:px-3">
-                           <MessageInput
-                                onSendMessage={handleSendMessage}
-                                isLoading={isLoading || isLoadingChat}
-                                setIsLoading={setIsLoading}
-                                onMediaRequested={handleMediaRequested}
-                                onModelChange={handleModelChange}
-                                onOptionsChange={handleInputOptionsChange}
-                                selectedModel={model}
-                            />
+                    {hasActiveConversation && (
+                        <div className="w-full bottom-0 sticky z-10">
+                            <div className={`w-full mx-auto flex-shrink-0 py-2 
+                                   ${theme === 'dark' ? 'bg-black' : 'bg-white'}
+                                   ${theme === 'dark' ? 'border-white/10' : 'border-gray-200'}`}>
+                                <MessageInput
+                                    onSendMessage={handleSendMessage}
+                                    isLoading={isLoading || isLoadingChat}
+                                    setIsLoading={setIsLoading}
+                                    onMediaRequested={handleMediaRequested}
+                                    onModelChange={handleModelChange}
+                                    onOptionsChange={handleInputOptionsChange}
+                                    selectedModel={model}
+                                />
+                            </div>
                         </div>
-                    </div>
+                    )}
 
                 </main>
             </div>
