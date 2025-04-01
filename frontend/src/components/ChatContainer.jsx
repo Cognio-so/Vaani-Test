@@ -640,8 +640,16 @@ const ChatContainer = () => {
                     </div>
 
                     {/* Content Area (Scrollable) */}
-                    <div className={`flex-1 overflow-y-auto scroll-smooth min-h-0 scrollbar-hide px-0 pb-28 ${!hasActiveConversation ? 'flex items-center justify-center' : ''}`}> {/* Keep centering for the overall block */}
-                        <div className={`w-full max-w-[95%] xs:max-w-[90%] sm:max-w-3xl md:max-w-3xl mx-auto pt-4 md:pt-6 ${!hasActiveConversation ? 'flex flex-col items-center' : ''}`}> {/* Center content *within* this block */}
+                    {/* Apply flex centering ONLY when no conversation. Remove padding when centering. */}
+                    <div className={`flex-1 overflow-y-auto scroll-smooth min-h-0 scrollbar-hide px-0 ${
+                        hasActiveConversation
+                            ? 'pb-24 md:pb-24' // Padding only when chat is active
+                            : 'flex items-center justify-center' // Centering when no chat
+                    }`}>
+                        {/* This inner container ONLY needs width/margin/padding. Centering is handled by parent. */}
+                        <div className={`w-full max-w-[95%] xs:max-w-[90%] sm:max-w-3xl md:max-w-3xl mx-auto pt-4 md:pt-6 ${
+                            !hasActiveConversation ? 'text-center' : '' // Add text-center for welcome screen alignment
+                        }`}>
                             {hasActiveConversation ? (
                                 <>
                                     {messages.map((msg, index) => {
@@ -701,7 +709,9 @@ const ChatContainer = () => {
                                     </div>
                                 </>
                             ) : (
-                                <div className="flex flex-col items-center justify-center text-center w-full"> {/* Ensure this container takes full width */}
+                                // Welcome screen content
+                                // Keep flex-col items-center for internal layout of this block
+                                <div className="flex flex-col items-center w-full">
                                     <h1 className="text-xl sm:text-3xl font-bold text-[#cc2b5e]">Welcome to Vaani.pro</h1>
                                     <p className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'} text-sm sm:text-xl mt-1 sm:mt-2`}>How may I help you?</p>
 
@@ -709,7 +719,8 @@ const ChatContainer = () => {
                                         {predefinedPrompts.map((item) => (
                                             <motion.div
                                                 key={item.id}
-                                                className={`group relative ${theme === 'dark' ? 'bg-white/[0.05] backdrop-blur-xl border border-white/20 hover:bg-white/[0.08] shadow-[0_0_15px_rgba(204,43,94,0.2)] hover:shadow-[0_0_20px_rgba(204,43,94,0.4)]' : 'bg-gray-100 border border-gray-200 hover:bg-gray-200 shadow-md hover:shadow-lg'} rounded-xl p-4 cursor-pointer transition-all duration-150`}
+                                                // Added text-left to reset alignment inside the card
+                                                className={`group relative ${theme === 'dark' ? 'bg-white/[0.05] backdrop-blur-xl border border-white/20 hover:bg-white/[0.08] shadow-[0_0_15px_rgba(204,43,94,0.2)] hover:shadow-[0_0_20px_rgba(204,43,94,0.4)]' : 'bg-gray-100 border border-gray-200 hover:bg-gray-200 shadow-md hover:shadow-lg'} rounded-xl p-4 cursor-pointer transition-all duration-150 text-left`}
                                                 whileHover={{ scale: 1.03, transition: { duration: 0.15 } }}
                                                 whileTap={{ scale: 0.98 }}
                                                 onClick={() => handlePromptClick(item)}
@@ -722,8 +733,8 @@ const ChatContainer = () => {
                                         ))}
                                     </div>
 
-                                    {/* --- Add MessageInput back here for the welcome screen --- */}
-                                    <div className="w-full max-w-[95%] xs:max-w-[90%] sm:max-w-3xl md:max-w-3xl mx-auto mt-8">
+                                    {/* --- MessageInput for DESKTOP Welcome Screen ONLY --- */}
+                                    <div className="hidden md:block w-full max-w-[95%] xs:max-w-[90%] sm:max-w-3xl md:max-w-3xl mx-auto mt-2">
                                         <MessageInput
                                             onSendMessage={handleSendMessage}
                                             isLoading={isLoading || isLoadingChat}
@@ -734,7 +745,7 @@ const ChatContainer = () => {
                                             selectedModel={model}
                                         />
                                     </div>
-                                    {/* --- End of added MessageInput --- */}
+                                    {/* --- End of Desktop Welcome MessageInput --- */}
                                 </div>
                             )}
                             <div ref={messagesEndRef} className="h-1" />
@@ -742,24 +753,23 @@ const ChatContainer = () => {
                     </div>
 
 
-                    {/* Input Container (Fixed Position) - Keep this conditional */}
-                    {hasActiveConversation && (
-                        <div className="w-full bottom-0 sticky z-10">
-                            <div className={`w-full mx-auto flex-shrink-0 py-2
-                                   ${theme === 'dark' ? 'bg-black' : 'bg-white'}
-                                   ${theme === 'dark' ? 'border-white/10' : 'border-gray-200'}`}>
-                                <MessageInput
-                                    onSendMessage={handleSendMessage}
-                                    isLoading={isLoading || isLoadingChat}
-                                    setIsLoading={setIsLoading}
-                                    onMediaRequested={handleMediaRequested}
-                                    onModelChange={handleModelChange}
-                                    onOptionsChange={handleInputOptionsChange}
-                                    selectedModel={model}
-                                />
-                            </div>
+                    {/* Input Container (Fixed Position) */}
+                    {/* Shown always on mobile, shown on desktop ONLY when conversation is active */}
+                    <div className={`w-full bottom-0 sticky z-10 ${!hasActiveConversation ? 'md:hidden' : 'block'}`}>
+                        <div className={`w-full mx-auto flex-shrink-0 py-2
+                               ${theme === 'dark' ? 'bg-black' : 'bg-white'}`}>
+                             {/* The max-width was removed from here previously, let's add it back if needed, but it might be better inside MessageInput itself */}
+                            <MessageInput
+                                onSendMessage={handleSendMessage}
+                                isLoading={isLoading || isLoadingChat}
+                                setIsLoading={setIsLoading}
+                                onMediaRequested={handleMediaRequested}
+                                onModelChange={handleModelChange}
+                                onOptionsChange={handleInputOptionsChange}
+                                selectedModel={model}
+                            />
                         </div>
-                    )}
+                    </div>
 
                 </main>
             </div>
