@@ -205,30 +205,38 @@ const MessageContent = ({ content }) => {
   // Extract media first
   const { text, imageUrls, musicUrls } = extractMediaUrls(content);
 
-  // --- Important: Extract sources for the dropdown *before* cleaning the text ---
-  const sources = extractSources(text); // Use 'text' which is content without media URLs
+  // --- Extract sources for the dropdown from the original content ---
+  const sources = extractSources(content);
 
-  // --- Clean the text for display ---
+  // --- Clean the text for display more aggressively ---
   let cleanedText = text;
 
-  // Regex to find the "Sources:" block (plain or markdown) and all subsequent bullet points
-  // - (?:^|\n\n) : Matches the start of the string or after a blank line
-  // - \s* : Matches optional leading whitespace
-  // - (?:Sources:|\*\*Sources:\*\*) : Matches "Sources:" or "**Sources:**"
-  // - \s* : Matches optional whitespace after the header
-  // - ((?:\n\s*[*•-]\s+.*?)+) : Captures one or more lines starting with:
-  //   - \n : Newline
-  //   - \s* : Optional leading space/indentation
-  //   - [*•-] : A bullet point character (*, •, or -)
-  //   - \s+ : One or more spaces after the bullet
-  //   - .*? : Any characters non-greedily until the end of the line
-  // - /m : Multiline mode (so ^ matches start of lines)
-  const sourcesBlockRegex = /(?:^|\n\n)\s*(?:Sources:|\*\*Sources:\*\*)\s*((?:\n\s*[*•-]\s+.*?)+)/m;
-
-  cleanedText = cleanedText.replace(sourcesBlockRegex, '');
-
-  // Final trim for any leftover whitespace
-  cleanedText = cleanedText.trim();
+  if (sources.length > 0) {
+    // First, try to find and remove the entire Sources block
+    // This pattern will match:
+    // 1. "Sources:" at the beginning of a line (with optional whitespace)
+    // 2. The entire content after "Sources:" until the end of the text or a double newline
+    cleanedText = cleanedText.replace(/^Sources:.*?(?=\n\n|$)/sm, '');
+    
+    // Also try with bold markdown format
+    cleanedText = cleanedText.replace(/^\*\*Sources:\*\*.*?(?=\n\n|$)/sm, '');
+    
+    // Remove all bullet point lines with URLs (very aggressive approach)
+    sources.forEach(source => {
+      const urlEscaped = source.url.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+      // Match any line containing the URL with any bullet point format
+      cleanedText = cleanedText.replace(new RegExp(`^[\\s]*[•\\*\\-][\\s].*${urlEscaped}.*$`, 'gm'), '');
+    });
+    
+    // Remove any empty bullet points that might be left
+    cleanedText = cleanedText.replace(/^[\\s]*[•\\*\\-][\\s]*$/gm, '');
+    
+    // Remove excessive newlines that might result from the removals
+    cleanedText = cleanedText.replace(/\n{3,}/g, '\n\n');
+    
+    // Final trim
+    cleanedText = cleanedText.trim();
+  }
 
   const handleImageDownload = (url) => {
     const xhr = new XMLHttpRequest();
