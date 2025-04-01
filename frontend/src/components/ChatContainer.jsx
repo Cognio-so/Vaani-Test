@@ -753,9 +753,11 @@ const ChatContainer = () => {
 
 
                     {/* Input Container (Fixed Position) */}
-                    {/* Added pb-safe for iOS bottom bar */}
+                    {/* Removed border-t classes */}
+                    {/* The top border (border-t) IS applied to this outer div */}
                     <div className={`w-full bottom-0 sticky z-10 ${!hasActiveConversation ? 'md:hidden' : 'block'}
-                           py-2 pb-safe ${theme === 'dark' ? 'bg-black border-t border-white/10' : 'bg-white border-t border-gray-200'}`}>
+                           py-2 pb-safe ${theme === 'dark' ? 'bg-black' : 'bg-white '}`}>
+                        {/* This inner div should NOT have the border-t class */}
                         <div className={`w-full mx-auto flex-shrink-0`}>
                             <MessageInput
                                 onSendMessage={handleSendMessage}
