@@ -1,5 +1,5 @@
-  import { motion } from 'framer-motion'
-  import MessageInput from './MessageInput'
+import { motion } from 'framer-motion'
+import MessageInput from './MessageInput'
 import Sidebar from './Sidebar'
 import ChatHistory from './ChatHistory'
 import Settings from './Settings'
@@ -43,35 +43,35 @@ const ChatContainer = () => {
     // --- Callbacks & Effects ---
 
     // ScrollToBottom (Ensure reliable scroll target)
-      const scrollToBottom = useCallback(() => {
-          if (scrollToBottom.isScrolling) return;
-          scrollToBottom.isScrolling = true;
+    const scrollToBottom = useCallback(() => {
+        if (scrollToBottom.isScrolling) return;
+        scrollToBottom.isScrolling = true;
 
-          requestAnimationFrame(() => {
-              if (messagesEndRef.current) {
-                  const scrollContainer = messagesEndRef.current.closest('.overflow-y-auto');
-                  if (scrollContainer) {
-                      scrollContainer.scrollTop = scrollContainer.scrollHeight;
-                  }
-                  messagesEndRef.current.scrollIntoView({
-                      behavior: 'auto',
-                      block: 'end',
-                  });
-              }
+        requestAnimationFrame(() => {
+            if (messagesEndRef.current) {
+                const scrollContainer = messagesEndRef.current.closest('.overflow-y-auto');
+                if (scrollContainer) {
+                    scrollContainer.scrollTop = scrollContainer.scrollHeight;
+                }
+                messagesEndRef.current.scrollIntoView({
+                    behavior: 'auto',
+                    block: 'end',
+                });
+            }
 
-              setTimeout(() => {
-                  if (messagesEndRef.current) {
-                      const scrollContainer = messagesEndRef.current.closest('.overflow-y-auto');
-                      if (scrollContainer) {
-                         if (scrollContainer.scrollHeight > scrollContainer.clientHeight) {
-                           scrollContainer.scrollTop = scrollContainer.scrollHeight;
-                         }
-                      }
-                  }
-                  scrollToBottom.isScrolling = false;
-              }, 150);
-          });
-      }, []);
+            setTimeout(() => {
+                if (messagesEndRef.current) {
+                    const scrollContainer = messagesEndRef.current.closest('.overflow-y-auto');
+                    if (scrollContainer) {
+                        if (scrollContainer.scrollHeight > scrollContainer.clientHeight) {
+                            scrollContainer.scrollTop = scrollContainer.scrollHeight;
+                        }
+                    }
+                }
+                scrollToBottom.isScrolling = false;
+            }, 150);
+        });
+    }, []);
 
     // Scroll Effect
     useEffect(() => {
@@ -131,13 +131,13 @@ const ChatContainer = () => {
             const cleanMessages = currentMessages
                 .filter(msg => !msg.isTemporary && !(msg.isLoading && !msg.content))
                 .map(msg => ({
-                   role: msg.role,
-                   content: msg.content,
+                    role: msg.role,
+                    content: msg.content,
                 }));
 
             if (cleanMessages.length === 0) {
-                 saveInProgress.current = false;
-                 return;
+                saveInProgress.current = false;
+                return;
             }
 
             const isExistingChat = finalThreadId && !finalThreadId.startsWith('temp_');
@@ -202,69 +202,85 @@ const ChatContainer = () => {
     }, [isGeneratingMedia, generatingMediaType, mediaType]);
 
     // --- API Call Handlers (Streaming) ---
-     const handleReactAgentStreamingRequest = useCallback(async (userMessage, options) => {
+    const handleReactAgentStreamingRequest = useCallback(async (userMessage, options) => {
         setIsLoading(true);
         setAgentStatus("Initializing research agent...");
-        const controller = new AbortController();
-        const signal = controller.signal;
         const tempMessageId = `temp_assistant_${Date.now()}`;
         let finalThreadId = threadId || chatIdRef.current;
+        let accumulatedContent = "";
 
-        setMessages(prev => [...prev, { role: 'assistant', content: '', isTemporary: true, isLoading: true, id: tempMessageId, agentStatus: "Initializing..." }]);
+        setMessages(prev => [...prev, {
+            role: 'assistant',
+            content: '',
+            isTemporary: true,
+            isLoading: true,
+            id: tempMessageId,
+            agentStatus: "Initializing..."
+        }]);
 
         try {
-            const messagesToSend = messages.map(msg => ({ role: msg.role, content: msg.content }));
-            messagesToSend.push({ role: userMessage.role, content: userMessage.content });
-
             const response = await fetch(`${API_URL}/api/react-search-streaming`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    messages: messagesToSend,
+                    messages: [...messages.map(msg => ({ role: msg.role, content: msg.content })),
+                    { role: userMessage.role, content: userMessage.content }],
                     model: options.model,
                     thread_id: finalThreadId.startsWith('temp_') ? null : finalThreadId,
                     file_url: options.file_url,
                     max_search_results: options.deep_research ? 5 : 3
-                }),
-                signal
+                })
             });
 
             if (!response.ok) {
-                 const errorText = await response.text();
-                throw new Error(`API error (${response.status}): ${errorText}`);
+                throw new Error(`API error (${response.status})`);
             }
 
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let buffer = '';
-            let receivedResult = false;
-            let finalMessage = null;
 
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
 
                 buffer += decoder.decode(value, { stream: true });
-                let newlineIndex;
-                while ((newlineIndex = buffer.indexOf('\n')) !== -1) {
-                    const line = buffer.substring(0, newlineIndex).trim();
-                    buffer = buffer.substring(newlineIndex + 1);
+                const lines = buffer.split('\n');
+                buffer = lines.pop() || '';
 
-                    if (!line) continue;
-
+                for (const line of lines) {
+                    if (!line.trim()) continue;
                     try {
                         const data = JSON.parse(line);
 
                         if (data.type === 'status') {
                             setAgentStatus(data.status);
-                             setMessages(prev => prev.map(msg => msg.id === tempMessageId ? { ...msg, agentStatus: data.status, isLoading: true, isTemporary: true } : msg));
+                            setMessages(prev => prev.map(msg =>
+                                msg.id === tempMessageId ?
+                                    { ...msg, agentStatus: data.status } : msg
+                            ));
+                        } else if (data.type === 'chunk') {
+                            accumulatedContent += data.chunk;
+                            setMessages(prev => prev.map(msg =>
+                                msg.id === tempMessageId ?
+                                    { ...msg, content: accumulatedContent, isLoading: true } : msg
+                            ));
                         } else if (data.type === 'result') {
-                            receivedResult = true;
-                            finalMessage = data.message ? { ...data.message, role: 'assistant' } : { role: 'assistant', content: 'Agent finished processing.' };
                             finalThreadId = data.thread_id || finalThreadId;
+                            const finalContent = data.message?.content || accumulatedContent;
 
                             setMessages(prev => {
-                                const updated = prev.map(msg => msg.id === tempMessageId ? { ...finalMessage, id: finalThreadId, isTemporary: false, isLoading: false, agentStatus: undefined } : msg);
+                                const updated = prev.map(msg =>
+                                    msg.id === tempMessageId ?
+                                        {
+                                            role: 'assistant',
+                                            content: finalContent,
+                                            id: finalThreadId,
+                                            isTemporary: false,
+                                            isLoading: false,
+                                            agentStatus: undefined
+                                        } : msg
+                                );
                                 if (!threadId && finalThreadId && !finalThreadId.startsWith('temp_')) {
                                     setThreadId(finalThreadId);
                                     chatIdRef.current = finalThreadId;
@@ -272,25 +288,21 @@ const ChatContainer = () => {
                                 saveChat(updated, finalThreadId);
                                 return updated;
                             });
-                            break;
                         }
                     } catch (e) {
-                        console.error("Parse Error (React Agent):", e, "Line:", line);
+                        console.error("Parse Error:", e, "Line:", line);
                     }
                 }
-                 if (receivedResult) break;
             }
-             if (!receivedResult) {
-                 console.warn("React Agent stream ended without a final result message.");
-                 setMessages(prev => prev.map(msg => msg.id === tempMessageId ? { ...msg, content: agentStatus || '[Agent task complete, no message returned]', isTemporary: false, isLoading: false, agentStatus: undefined } : msg));
-             }
-
         } catch (error) {
-             console.error("React Agent Request Error:", error);
-             setMessages(prev => {
+            console.error("React Agent Request Error:", error);
+            setMessages(prev => {
                 const filtered = prev.filter(msg => msg.id !== tempMessageId);
-                return [...filtered, { role: 'assistant', content: `Research error: ${error.message}. Please try again.` }];
-             });
+                return [...filtered, {
+                    role: 'assistant',
+                    content: `Research error: ${error.message}. Please try again.`
+                }];
+            });
         } finally {
             setIsLoading(false);
             setAgentStatus("");
@@ -339,10 +351,10 @@ const ChatContainer = () => {
                 })
             });
 
-             if (!response.ok) {
-                 const errorText = await response.text();
-                 throw new Error(`API Error (${response.status}): ${errorText}`);
-             }
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`API Error (${response.status}): ${errorText}`);
+            }
 
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
@@ -360,98 +372,98 @@ const ChatContainer = () => {
                 buffer = lines.pop() || '';
 
                 for (const line of lines) {
-                     if (!line.trim()) continue;
-                     try {
-                         const data = JSON.parse(line);
+                    if (!line.trim()) continue;
+                    try {
+                        const data = JSON.parse(line);
 
-                         if (data.type === "status") {
-                             setAgentStatus(data.status);
-                             if (!isMediaReq) {
-                                 setMessages(prev => prev.map(msg => msg.id === tempMessageId ? { ...msg, agentStatus: data.status } : msg));
-                             }
-                         } else if (data.type === "chunk") {
-                             fullResponse += data.chunk;
-                             if (!isMediaReq) {
-                                 setMessages(prev => prev.map(msg => msg.id === tempMessageId ? { ...msg, content: fullResponse, isLoading: true, isTemporary: true } : msg));
-                             }
-                         } else if (data.type === "done" || data.type === "result") {
-                             receivedFinal = true;
-                             finalThreadId = data.thread_id || finalThreadId;
-                             const finalContent = data.message?.content || fullResponse;
-                              finalMessageData = {
-                                 ...(data.message || { role: 'assistant', content: finalContent }),
-                                 id: finalThreadId,
-                                 isTemporary: false,
-                                 isLoading: false,
-                                 agentStatus: undefined
-                             };
+                        if (data.type === "status") {
+                            setAgentStatus(data.status);
+                            if (!isMediaReq) {
+                                setMessages(prev => prev.map(msg => msg.id === tempMessageId ? { ...msg, agentStatus: data.status } : msg));
+                            }
+                        } else if (data.type === "chunk") {
+                            fullResponse += data.chunk;
+                            if (!isMediaReq) {
+                                setMessages(prev => prev.map(msg => msg.id === tempMessageId ? { ...msg, content: fullResponse, isLoading: true, isTemporary: true } : msg));
+                            }
+                        } else if (data.type === "done" || data.type === "result") {
+                            receivedFinal = true;
+                            finalThreadId = data.thread_id || finalThreadId;
+                            const finalContent = data.message?.content || fullResponse;
+                            finalMessageData = {
+                                ...(data.message || { role: 'assistant', content: finalContent }),
+                                id: finalThreadId,
+                                isTemporary: false,
+                                isLoading: false,
+                                agentStatus: undefined
+                            };
 
-                             const isMediaResp = /jpe?g|png|gif|webp|replicate|image-url|!\[.*?\)|mp3|wav|ogg|musicfy|audio-url/i.test(finalMessageData.content);
+                            const isMediaResp = /jpe?g|png|gif|webp|replicate|image-url|!\[.*?\)|mp3|wav|ogg|musicfy|audio-url/i.test(finalMessageData.content);
 
-                             setMessages(prev => {
-                                 let updatedMessages;
-                                 if (isMediaReq) {
-                                     updatedMessages = [...prev.filter(m => m.id !== tempMessageId), finalMessageData];
-                                     if (!isMediaResp) {
-                                          setIsGeneratingMedia(false);
-                                     }
-                                 } else {
-                                     updatedMessages = prev.map(msg => msg.id === tempMessageId ? finalMessageData : msg);
-                                 }
-                                 if (!threadId && finalThreadId && !finalThreadId.startsWith('temp_')) {
+                            setMessages(prev => {
+                                let updatedMessages;
+                                if (isMediaReq) {
+                                    updatedMessages = [...prev.filter(m => m.id !== tempMessageId), finalMessageData];
+                                    if (!isMediaResp) {
+                                        setIsGeneratingMedia(false);
+                                    }
+                                } else {
+                                    updatedMessages = prev.map(msg => msg.id === tempMessageId ? finalMessageData : msg);
+                                }
+                                if (!threadId && finalThreadId && !finalThreadId.startsWith('temp_')) {
                                     setThreadId(finalThreadId);
                                     chatIdRef.current = finalThreadId;
-                                 }
+                                }
                                 saveChat(updatedMessages, finalThreadId);
                                 return updatedMessages;
                             });
 
-                             setIsLoading(false);
-                             setAgentStatus("");
-                             if (!isMediaResp) {
-                                 setIsGeneratingMedia(false);
-                                 setGeneratingMediaType(null);
-                                 setMediaType(null);
-                             }
-                             break;
-                         }
-                     } catch (e) {
-                          console.error("Parse Error (Chat):", e, "Line:", line);
-                           if (done && !receivedFinal) {
-                               fullResponse += "\n[Stream Parse Error]";
-                           }
-                     }
+                            setIsLoading(false);
+                            setAgentStatus("");
+                            if (!isMediaResp) {
+                                setIsGeneratingMedia(false);
+                                setGeneratingMediaType(null);
+                                setMediaType(null);
+                            }
+                            break;
+                        }
+                    } catch (e) {
+                        console.error("Parse Error (Chat):", e, "Line:", line);
+                        if (done && !receivedFinal) {
+                            fullResponse += "\n[Stream Parse Error]";
+                        }
+                    }
                 }
-                 if (receivedFinal) break;
+                if (receivedFinal) break;
             }
             if (!receivedFinal) {
-                 console.warn("Chat stream ended unexpectedly.");
-                 setIsLoading(false);
-                 setAgentStatus("");
-                 setIsGeneratingMedia(false);
+                console.warn("Chat stream ended unexpectedly.");
+                setIsLoading(false);
+                setAgentStatus("");
+                setIsGeneratingMedia(false);
 
-                 setMessages(prev => {
-                     const finalContent = fullResponse || "[Incomplete Response]";
-                     let updatedMessages;
-                     if (isMediaReq) {
-                         updatedMessages = [...prev, { role: 'assistant', content: finalContent, isTemporary: false, isLoading: false }];
-                     } else {
-                         updatedMessages = prev.map(msg => msg.id === tempMessageId ? { ...msg, content: finalContent, isTemporary: false, isLoading: false, agentStatus: undefined } : msg);
-                     }
-                     saveChat(updatedMessages, finalThreadId);
-                     return updatedMessages;
-                 });
-             }
+                setMessages(prev => {
+                    const finalContent = fullResponse || "[Incomplete Response]";
+                    let updatedMessages;
+                    if (isMediaReq) {
+                        updatedMessages = [...prev, { role: 'assistant', content: finalContent, isTemporary: false, isLoading: false }];
+                    } else {
+                        updatedMessages = prev.map(msg => msg.id === tempMessageId ? { ...msg, content: finalContent, isTemporary: false, isLoading: false, agentStatus: undefined } : msg);
+                    }
+                    saveChat(updatedMessages, finalThreadId);
+                    return updatedMessages;
+                });
+            }
 
         } catch (error) {
-             console.error("Chat Request Error:", error);
-             setIsLoading(false);
-             setAgentStatus("");
-             setIsGeneratingMedia(false);
-              setMessages(prev => {
-                  const filtered = prev.filter(msg => msg.id !== tempMessageId);
-                  return [...filtered, { role: 'assistant', content: `Error: ${error.message}. Please try again.` }];
-              });
+            console.error("Chat Request Error:", error);
+            setIsLoading(false);
+            setAgentStatus("");
+            setIsGeneratingMedia(false);
+            setMessages(prev => {
+                const filtered = prev.filter(msg => msg.id !== tempMessageId);
+                return [...filtered, { role: 'assistant', content: `Error: ${error.message}. Please try again.` }];
+            });
         }
     }, [messages, threadId, API_URL, saveChat]);
 
@@ -482,7 +494,7 @@ const ChatContainer = () => {
         };
 
         if (mergedOptions.deep_research) {
-             handleReactAgentStreamingRequest(userMessage, mergedOptions);
+            handleReactAgentStreamingRequest(userMessage, mergedOptions);
         } else {
             handleChatStreamingRequest(userMessage, mergedOptions);
         }
@@ -501,10 +513,10 @@ const ChatContainer = () => {
             const response = await axios.get(`${backend_url}/api/chat/${chatIdToLoad}`, { withCredentials: true });
             if (response.data.success) {
                 const chatData = response.data.chat;
-                 const loadedMessages = (chatData.messages || []).map(msg => ({
+                const loadedMessages = (chatData.messages || []).map(msg => ({
                     role: msg.role,
                     content: msg.content,
-                 }));
+                }));
 
                 setMessages(loadedMessages);
                 setChatTitle(chatData.title || "Chat");
@@ -515,15 +527,15 @@ const ChatContainer = () => {
                 setIsHistoryOpen(false);
 
                 requestAnimationFrame(() => {
-                     setTimeout(scrollToBottom, 100);
-                 });
+                    setTimeout(scrollToBottom, 100);
+                });
 
             } else {
                 console.error("Failed to load chat:", response.data);
-             }
+            }
         } catch (error) {
-             console.error("Error loading chat:", error.response?.data || error.message);
-         } finally {
+            console.error("Error loading chat:", error.response?.data || error.message);
+        } finally {
             setIsLoadingChat(false);
         }
     }, [backend_url, scrollToBottom, isLoadingChat]);
@@ -550,7 +562,7 @@ const ChatContainer = () => {
         setChatTitle(newTitle.trim());
 
         try {
-             const currentMessagesToSave = messages.map(msg => ({ role: msg.role, content: msg.content }));
+            const currentMessagesToSave = messages.map(msg => ({ role: msg.role, content: msg.content }));
 
             const response = await axios.put(
                 `${backend_url}/api/chat/${threadId}/update`,
@@ -561,7 +573,7 @@ const ChatContainer = () => {
             if (response.data.success) {
                 fetchChatHistory();
                 chatLastUpdatedRef.current = response.data.chat.lastUpdated;
-             } else {
+            } else {
                 setChatTitle(oldTitle);
                 console.error("Update Title Error (API):", response.data);
             }
@@ -598,7 +610,7 @@ const ChatContainer = () => {
         { id: 3, title: "Code Assistant", prompt: "Explain how you can assist with coding." }
     ];
     const handlePromptClick = (item) => {
-       handleSendMessage({ content: item.prompt }, { model, use_agent: useAgent, deep_research: deepResearch });
+        handleSendMessage({ content: item.prompt }, { model, use_agent: useAgent, deep_research: deepResearch });
     }
 
     const hasActiveConversation = messages.length > 0;
@@ -606,17 +618,26 @@ const ChatContainer = () => {
     // --- JSX Structure ---
     return (
         <div className={`flex flex-col h-screen w-full overflow-hidden ${theme === 'dark' ? 'bg-black' : 'bg-white'}`}>
-            {isHistoryOpen && ( <div className={`fixed inset-0 z-[150] ${theme === 'dark' ? 'bg-black' : 'bg-white '}`}><ChatHistory isOpen={isHistoryOpen} onClose={() => setIsHistoryOpen(false)} conversations={conversations} onSelectConversation={loadChat} isLoading={isLoadingChat}/></div> )}
-            {isSettingsOpen && ( <div className={`fixed inset-0 z-[200] ${theme === 'dark' ? 'bg-black' : 'bg-white '}`}><Settings isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} onClearConversation={clearConversation}/></div> )}
+            {isHistoryOpen && (<div className={`fixed inset-0 z-[150] ${theme === 'dark' ? 'bg-black' : 'bg-white '}`}><ChatHistory isOpen={isHistoryOpen} onClose={() => setIsHistoryOpen(false)} conversations={conversations} onSelectConversation={loadChat} isLoading={isLoadingChat} /></div>)}
+            {isSettingsOpen && (<div className={`fixed inset-0 z-[200] ${theme === 'dark' ? 'bg-black' : 'bg-white '}`}><Settings isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} onClearConversation={clearConversation} /></div>)}
 
             <div className="flex h-full flex-1 overflow-hidden">
-                <Sidebar isVisible={isSidebarVisible} onToggle={toggleSidebar} onOpenSettings={() => setIsSettingsOpen(true)} onOpenHistory={() => setIsHistoryOpen(true)} onNewChat={clearConversation} activeChatId={threadId}/>
+                <Sidebar isVisible={isSidebarVisible} onToggle={toggleSidebar} onOpenSettings={() => setIsSettingsOpen(true)} onOpenHistory={() => setIsHistoryOpen(true)} onNewChat={clearConversation} activeChatId={threadId} />
 
                 <main className={`flex-1 flex flex-col h-full overflow-hidden transition-all duration-300 relative ${isSidebarVisible ? 'lg:ml-64 sm:ml-16 ml-14' : 'ml-0'}`}>
 
-                     <div className="md:hidden h-14 sm:h-16 flex-shrink-0 bg-white/80  backdrop-blur-sm z-10"></div>
-                     <div className="absolute top-0 left-0 right-0 h-14 sm:h-16 flex items-center justify-center md:hidden z-20 pointer-events-none"><div className="flex items-center pointer-events-auto"><img src="/vannipro.png" alt="Vaani.pro Logo" className="h-6 sm:h-8" /><h1 className="text-sm sm:text-lg font-bold ml-2 text-[#cc2b5e]">Vaani.pro</h1></div></div>
-                     <div className="absolute top-4 right-4 sm:right-6 z-30 flex items-center"><div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden border-2 border-pink-500/50"><img src={user?.profilePicture || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23cc2b5e'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/%3E%3C/svg%3E"} alt={user?.name || "Profile"} className="w-full h-full object-cover" onError={(e) => { e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23cc2b5e'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/%3E%3C/svg%3E"; }}/></div></div>
+                    <div className={`md:hidden h-14 sm:h-16 flex-shrink-0 ${theme === 'dark' ? 'bg-[#0A0A0A]/80' : 'bg-white/80'} backdrop-blur-sm z-10`}></div>
+                    <div className="absolute top-0 left-0 right-0 h-14 sm:h-16 flex items-center justify-center md:hidden z-20 pointer-events-none">
+                        <div className="flex items-center pointer-events-auto">
+                            <img src="/vannipro.png" alt="Vaani.pro Logo" className="h-6 sm:h-8" />
+                            <h1 className={`text-sm sm:text-lg font-bold ml-2 text-[#cc2b5e]`}>Vaani.pro</h1>
+                        </div>
+                    </div>
+                    <div className="absolute top-4 right-4 sm:right-6 z-30 flex items-center">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden border-2 border-pink-500/50">
+                            <img src={user?.profilePicture || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23cc2b5e'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/%3E%3C/svg%3E"} alt={user?.name || "Profile"} className="w-full h-full object-cover" onError={(e) => { e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23cc2b5e'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/%3E%3C/svg%3E"; }} />
+                        </div>
+                    </div>
 
                     {/* Content Area (Scrollable) */}
                     <div className="flex-1 overflow-y-auto scroll-smooth min-h-0 scrollbar-hide px-0 pb-28"> {/* Adjusted padding bottom for input */}
@@ -631,92 +652,90 @@ const ChatContainer = () => {
                                         return (
                                             <div key={msg.id || `msg-${index}`} className={`mb-4 w-full flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                                                 {msg.role === 'user' ? (
-                                                    <div className={`dark:bg-white/20 bg-black/10 ${theme === 'dark' ? 'text-white' : 'text-gray-900'} rounded-2xl p-3 px-4 max-w-[85%] break-words shadow-sm backdrop-blur-sm`}>
+                                                    <div className={`${theme === 'dark' ? 'bg-gray-500 text-white' : 'bg-gray-300 text-black'}  rounded-2xl p-3 px-4 max-w-[85%] break-words shadow-sm backdrop-blur-sm`}>
                                                         <MessageContent content={displayContent} />
                                                     </div>
                                                 ) : (
                                                     <div className={`${theme === 'dark' ? 'text-white' : 'text-gray-800'} rounded-xl p-0 w-full max-w-full pl-1 xs:pl-2 sm:pl-0`}>
-                                                       <MessageContent
-                                                          content={msg.content}
-                                                          forceImageDisplay={true}
-                                                          forceAudioDisplay={true}
-                                                          onMediaLoaded={isLastMessage && isGeneratingMedia ? handleMediaLoaded : undefined}
-                                                          isStreaming={isStreaming}
-                                                          agentStatus={isLastMessage ? msg.agentStatus : undefined}
-                                                       />
+                                                        <MessageContent
+                                                            content={msg.content}
+                                                            forceImageDisplay={true}
+                                                            forceAudioDisplay={true}
+                                                            onMediaLoaded={isLastMessage && isGeneratingMedia ? handleMediaLoaded : undefined}
+                                                            isStreaming={isStreaming}
+                                                            agentStatus={isLastMessage ? msg.agentStatus : undefined}
+                                                        />
                                                     </div>
                                                 )}
                                             </div>
                                         );
                                     })}
 
-                                     {/* --- Loading / Status Indicators Area --- */}
-                                     <div className="w-full max-w-full pl-1 xs:pl-2 sm:pl-0 min-h-[4rem]">
-                                         {isGeneratingMedia && (
-                                             <div className="mb-4 flex justify-start">
-                                                  <MediaLoadingAnimation mediaType={mediaType || generatingMediaType} />
-                                             </div>
-                                         )}
-                                         {!isGeneratingMedia && isLoading && agentStatus && (useAgent || deepResearch) && (
-                                             <div className="mb-4 flex justify-start">
-                                                 <div className={`rounded-lg p-2 px-3 ${theme === 'dark' ? 'bg-white/[0.08]' : 'bg-gray-100'} shadow-sm inline-block`}>
-                                                     <div className="flex items-center space-x-2">
-                                                         <span className="text-xs opacity-80">{agentStatus}</span>
-                                                     </div>
-                                                 </div>
-                                             </div>
-                                         )}
-                                          {!isGeneratingMedia && isLoading && !agentStatus && !(messages[messages.length - 1]?.isTemporary || messages[messages.length-1]?.isLoading) && (
-                                             <div className="mb-4 flex justify-start">
-                                                  <div className='rounded-full p-2 shadow-sm inline-block'>
-                                                      <div className="flex items-center space-x-1">
-                                                          <span className={`text-xs opacity-80 ${theme === 'dark' ? 'text-white' : 'text-black'} animate-pulse`}>●</span>
-                                                          <span className={`text-xs opacity-80 ${theme === 'dark' ? 'text-white' : 'text-black'} animate-pulse delay-150`}>●</span>
-                                                          <span className={`text-xs opacity-80 ${theme === 'dark' ? 'text-white' : 'text-black'} animate-pulse delay-300`}>●</span>
-                                                      </div>
-                                                  </div>
-                                             </div>
-                                         )}
-                                     </div>
+                                    {/* --- Loading / Status Indicators Area --- */}
+                                    <div className="w-full max-w-full pl-1 xs:pl-2 sm:pl-0 min-h-[4rem]">
+                                        {isGeneratingMedia && (
+                                            <div className="mb-4 flex justify-start">
+                                                <MediaLoadingAnimation mediaType={mediaType || generatingMediaType} />
+                                            </div>
+                                        )}
+                                        {!isGeneratingMedia && isLoading && agentStatus && (useAgent || deepResearch) && (
+                                            <div className="mb-4 flex justify-start">
+                                                <div className={`rounded-lg p-2 px-3 ${theme === 'dark' ? 'bg-white/[0.08]' : 'bg-gray-100'} shadow-sm inline-block`}>
+                                                    <div className="flex items-center space-x-2">
+                                                        <span className="text-xs opacity-80">{agentStatus}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {!isGeneratingMedia && isLoading && !agentStatus && !(messages[messages.length - 1]?.isTemporary || messages[messages.length - 1]?.isLoading) && (
+                                            <div className="mb-4 flex justify-start">
+                                                <div className='rounded-full p-2 shadow-sm inline-block'>
+                                                    <div className="flex items-center space-x-1">
+                                                        <span className={`text-xs opacity-80 ${theme === 'dark' ? 'text-white' : 'text-black'} animate-pulse`}>●</span>
+                                                        <span className={`text-xs opacity-80 ${theme === 'dark' ? 'text-white' : 'text-black'} animate-pulse delay-150`}>●</span>
+                                                        <span className={`text-xs opacity-80 ${theme === 'dark' ? 'text-white' : 'text-black'} animate-pulse delay-300`}>●</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
                                 </>
                             ) : (
-                                <div className="flex flex-col items-center justify-center min-h-[calc(100vh-8rem)] mx-auto px-4">
-                                    <div className="flex flex-col items-center justify-center text-center w-full max-w-[95%] xs:max-w-[90%] sm:max-w-3xl md:max-w-3xl">
-                                        <h1 className="text-xl sm:text-3xl font-bold text-[#cc2b5e]">Welcome to Vaani.pro</h1>
-                                        <p className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'} text-sm sm:text-xl mt-1 sm:mt-2`}>How may I help you?</p>
-                                        
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 max-w-5xl mx-auto mt-6 sm:mt-8 px-2 w-full">
-                                            {predefinedPrompts.map((item) => (
-                                                <motion.div
-                                                    key={item.id}
-                                                    className={`group relative ${theme === 'dark' ? 'bg-white/[0.05] backdrop-blur-xl border border-white/20 hover:bg-white/[0.08] shadow-[0_0_15px_rgba(204,43,94,0.2)] hover:shadow-[0_0_20px_rgba(204,43,94,0.4)]' : 'bg-gray-100 border border-gray-200 hover:bg-gray-200 shadow-md hover:shadow-lg'} rounded-xl p-4 cursor-pointer transition-all duration-150`}
-                                                    whileHover={{ scale: 1.03, transition: { duration: 0.15 } }}
-                                                    whileTap={{ scale: 0.98 }}
-                                                    onClick={() => handlePromptClick(item)}
-                                                >
-                                                    <div className="relative z-10">
-                                                        <h3 className={`${theme === 'dark' ? 'text-white/90' : 'text-gray-800'} font-medium text-sm mb-1`}>{item.title}</h3>
-                                                        <p className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'} text-xs line-clamp-2`}>{item.prompt}</p>
-                                                    </div>
-                                                </motion.div>
-                                            ))}
-                                        </div>
-                                        
-                                        <div className="w-full mt-8">
-                                            <MessageInput
-                                                onSendMessage={handleSendMessage}
-                                                isLoading={isLoading || isLoadingChat}
-                                                setIsLoading={setIsLoading}
-                                                onMediaRequested={handleMediaRequested}
-                                                onModelChange={handleModelChange}
-                                                onOptionsChange={handleInputOptionsChange}
-                                                selectedModel={model}
-                                            />
-                                        </div>
+                                <div className="flex flex-col items-center justify-center text-center min-h-[calc(100vh-24rem)] mx-auto">
+                                    <h1 className="text-xl sm:text-3xl font-bold text-[#cc2b5e]">Welcome to Vaani.pro</h1>
+                                    <p className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'} text-sm sm:text-xl mt-1 sm:mt-2`}>How may I help you?</p>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 max-w-5xl mx-auto mt-6 sm:mt-8 px-2 w-full mb-10">
+                                        {predefinedPrompts.map((item) => (
+                                            <motion.div
+                                                key={item.id}
+                                                className={`group relative ${theme === 'dark' ? 'bg-white/[0.05] backdrop-blur-xl border border-white/20 hover:bg-white/[0.08] shadow-[0_0_15px_rgba(204,43,94,0.2)] hover:shadow-[0_0_20px_rgba(204,43,94,0.4)]' : 'bg-gray-100 border border-gray-200 hover:bg-gray-200 shadow-md hover:shadow-lg'} rounded-xl p-4 cursor-pointer transition-all duration-150`}
+                                                whileHover={{ scale: 1.03, transition: { duration: 0.15 } }}
+                                                whileTap={{ scale: 0.98 }}
+                                                onClick={() => handlePromptClick(item)}
+                                            >
+                                                <div className="relative z-10">
+                                                    <h3 className={`${theme === 'dark' ? 'text-white/90' : 'text-gray-800'} font-medium text-sm mb-1`}>{item.title}</h3>
+                                                    <p className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'} text-xs line-clamp-2`}>{item.prompt}</p>
+                                                </div>
+                                            </motion.div>
+                                        ))}
+                                    </div>
+
+                                    <div className="w-full max-w-[95%] xs:max-w-[90%] sm:max-w-3xl md:max-w-3xl mx-auto mt-8">
+                                        <MessageInput
+                                            onSendMessage={handleSendMessage}
+                                            isLoading={isLoading || isLoadingChat}
+                                            setIsLoading={setIsLoading}
+                                            onMediaRequested={handleMediaRequested}
+                                            onModelChange={handleModelChange}
+                                            onOptionsChange={handleInputOptionsChange}
+                                            selectedModel={model}
+                                        />
                                     </div>
                                 </div>
                             )}
-                             <div ref={messagesEndRef} className="h-1" />
+                            <div ref={messagesEndRef} className="h-1" />
                         </div>
                     </div>
 
