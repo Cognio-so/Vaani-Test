@@ -42,23 +42,51 @@ const ChatContainer = () => {
 
     // --- Callbacks & Effects ---
 
-    // ScrollToBottom (Simplified)
+    // ScrollToBottom (Ensure reliable scroll target)
     const scrollToBottom = useCallback(() => {
+        if (scrollToBottom.isScrolling) return;
+        scrollToBottom.isScrolling = true;
+
+        requestAnimationFrame(() => {
             if (messagesEndRef.current) {
                 const scrollContainer = messagesEndRef.current.closest('.overflow-y-auto');
                 if (scrollContainer) {
                     scrollContainer.scrollTop = scrollContainer.scrollHeight;
+                }
+                messagesEndRef.current.scrollIntoView({
+                    behavior: 'auto',
+                    block: 'end',
+                });
             }
-        }
+
+            setTimeout(() => {
+                if (messagesEndRef.current) {
+                    const scrollContainer = messagesEndRef.current.closest('.overflow-y-auto');
+                    if (scrollContainer) {
+                        if (scrollContainer.scrollHeight > scrollContainer.clientHeight) {
+                            scrollContainer.scrollTop = scrollContainer.scrollHeight;
+                        }
+                    }
+                }
+                scrollToBottom.isScrolling = false;
+            }, 150);
+        });
     }, []);
 
-    // Scroll Effect (Simplified Trigger)
+    // Scroll Effect
     useEffect(() => {
-        if (!isLoadingChat) {
-            const scrollTimer = setTimeout(scrollToBottom, 0);
+        if (!isLoadingChat && messages.length > 0) {
+            const lastMessage = messages[messages.length - 1];
+            const shouldScroll = !(lastMessage?.isTemporary && isLoading);
+
+            if (shouldScroll) {
+                const delay = lastMessage?.role === 'user' ? 50 : 150;
+                const scrollTimer = setTimeout(scrollToBottom, delay);
                 return () => clearTimeout(scrollTimer);
             }
-    }, [messages, scrollToBottom, isLoadingChat]);
+        }
+    }, [messages, scrollToBottom, isLoadingChat, isLoading]);
+
 
     // Fetch History Effect
     const fetchChatHistory = useCallback(async () => {
