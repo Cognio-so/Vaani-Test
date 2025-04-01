@@ -200,39 +200,53 @@ const SourcesDropdown = ({ sources }) => {
   );
 };
 
-const MessageContent = ({ content }) => {
+const MessageContent = ({ content, forceImageDisplay, forceAudioDisplay, onMediaLoaded, isStreaming, agentStatus }) => {
   const { theme } = useContext(ThemeContext);
   
   // Extract sources BEFORE any cleaning
   const sources = extractSources(content);
   
   // Extract media
-  const { text, imageUrls, musicUrls } = extractMediaUrls(content);
+  const { text, imageUrls: extractedImageUrls, musicUrls: extractedMusicUrls } = extractMediaUrls(content);
   
-  // COMPLETE REMOVAL of sources section with a nuclear approach
-  // COMPLETE REMOVAL of sources section with a much more direct approach
+  // --- Enhanced Text Cleaning Logic ---
   let cleanedText = text;
   
-  // Emergency removal of all formats of sources section
-  // First check - classic "Sources:" followed by URLs on same line
-  cleanedText = cleanedText.replace(/Sources:.*?(https?:\/\/[^\s]+).*?$/gm, '');
+  // 1. Remove "Sources:" headers (case-insensitive, targeting start of line)
+  cleanedText = cleanedText.replace(/^\s*(\*\*Sources:\*\*|Sources:)\s*/gmi, '');
   
-  // Second check - "Sources:" and then bullet points 
-  cleanedText = cleanedText.replace(/Sources:[\s\S]*?((?:https?:\/\/[^\s]+)[^\n]*(?:\n|$))+/g, '');
-  
-  // Third check - bold markdown "**Sources:**"
-  cleanedText = cleanedText.replace(/\*\*Sources:\*\*[\s\S]*?((?:https?:\/\/[^\s]+)[^\n]*(?:\n|$))+/g, '');
-  
-  // Fourth check - remove standalone URLs that might be left
+  // 2. Remove lines that are list items containing extracted source URLs
   if (sources.length > 0) {
-    sources.forEach(source => {
-      const urlEscaped = source.url.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-      cleanedText = cleanedText.replace(new RegExp(urlEscaped, 'g'), '');
-    });
+      const sourceUrlsEscaped = sources.map(s => s.url.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'));
+      const sourceUrlPattern = `(?:${sourceUrlsEscaped.join('|')})`; // Combine all source URLs
+
+      // Regex to match lines starting with list markers (*, -, digits.) containing *any* extracted source URL
+      // Now also matches if the list marker is directly followed by the URL without much text
+      const listLineWithSourceRegex = new RegExp(`^\\s*([-*]|\\d+\\.)\\s+.*?${sourceUrlPattern}.*?$`, 'gm');
+      cleanedText = cleanedText.replace(listLineWithSourceRegex, '');
+
+      // 3. Remove lines that *only* contain a source URL (and maybe surrounding whitespace/brackets)
+      const standaloneSourceLineRegex = new RegExp(`^\\s*\\[?${sourceUrlPattern}\\]?\\s*$`, 'gm');
+      cleanedText = cleanedText.replace(standaloneSourceLineRegex, '');
+
+       // 3b. Remove source URLs if they appear alone at the end of other lines
+       sources.forEach(source => {
+           const urlEscaped = source.url.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+           // Ensure we don't break markdown image/links by checking what precedes the URL
+           // Remove URL if preceded by space and followed by optional space/punctuation then end of line.
+           cleanedText = cleanedText.replace(new RegExp(`(?<!\\]\\()\\s+${urlEscaped}[\\s.,;!?]*$`, 'gm'), '');
+       });
   }
-  
-  // Clean up multiple newlines and final trim
-  cleanedText = cleanedText.replace(/\n{3,}/g, '\n\n').trim();
+
+  // 4. Clean up excessive newlines and resulting empty lines
+  cleanedText = cleanedText.replace(/\n{3,}/g, '\n\n');
+  cleanedText = cleanedText.split('\n').filter(line => line.trim().length > 0).join('\n');
+  cleanedText = cleanedText.trim();
+  // --- End of Enhanced Cleaning ---
+
+  // Combine extracted media with potentially passed-in props for explicit display
+  const imageUrls = forceImageDisplay ? extractedImageUrls : [];
+  const musicUrls = forceAudioDisplay ? extractedMusicUrls : [];
 
   const handleImageDownload = (url) => {
     const xhr = new XMLHttpRequest();
@@ -262,120 +276,152 @@ const MessageContent = ({ content }) => {
   
   return (
     <div className={`message-content break-words ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>
-      {cleanedText && (
-        <div className={`prose ${theme === 'dark' ? 'prose-invert' : ''} prose-sm sm:prose-base max-w-none overflow-hidden`}>
-          <ReactMarkdown
-            remarkPlugins={[remarkGfm]}
-            components={{
-              code({ node, inline, className, children, ...props }) {
-                const match = /language-(\w+)/.exec(className || '');
-                const codeString = String(children).replace(/\n$/, '');
-                const [copied, setCopied] = useState(false);
-                
-                const copyToClipboard = (text) => {
-                  navigator.clipboard.writeText(text)
-                    .then(() => {
-                      setCopied(true);
-                      setTimeout(() => setCopied(false), 2000);
-                    })
-                    .catch(err => {
-                      console.error('Failed to copy code: ', err);
-                    });
-                };
-
-                return !inline && match ? (
-                  <div className="code-block">
-                    <div className="code-header">
-                      <span className="code-lang">{match[1]}</span>
-                      <button 
-                        onClick={() => copyToClipboard(codeString)}
-                        className="code-copy-btn"
-                        title={copied ? "Copied!" : "Copy code"}
-                      >
-                        {copied ? <TbCopyCheckFilled className="h-4 w-4" /> : <FaRegCopy className="h-4 w-4" />}
-                        <span className="ml-1">Copy</span>
-                      </button>
-                    </div>
-                    <SyntaxHighlighter
-                      style={atomDark}
-                      language={match[1]}
-                      PreTag="div"
-                      customStyle={{
-                        margin: '0',
-                        padding: '0.75rem',
-                        background: '#1e1e1e',
-                        fontSize: '14px',
-                        borderRadius: '0 0 6px 6px'
-                      }}
-                      codeTagProps={{
-                        style: {
-                          fontSize: 'inherit',
-                          lineHeight: 1.5
-                        }
-                      }}
-                      wrapLines={false}
-                      wrapLongLines={false}
-                      className="code-syntax"
-                      {...props}
-                    >
-                      {codeString}
-                    </SyntaxHighlighter>
-                  </div>
-                ) : (
-                  <code className={className} {...props}>
-                    {children}
-                  </code>
-                );
-              },
-              a: ({ node, ...props }) => {
-                const href = props.href || '';
-                const isMediaUrl = /\.(jpg|jpeg|png|gif|webp|mp3|wav|ogg)$/i.test(href) || 
-                                  href.includes('musicfy.lol') || 
-                                  href.includes('replicate');
-                
-                if (isMediaUrl) {
-                  return null;
-                }
-                
-                return (
-                  <a {...props} target="_blank" rel="noopener noreferrer" className="text-[#cc2b5e] underline" />
-                );
-              },
-              table: ({ node, ...props }) => (
-                <table {...props} className={`border-collapse ${theme === 'dark' ? 'border-gray-600' : 'border-gray-300'} my-4 w-full`} />
-              ),
-              th: ({ node, ...props }) => (
-                <th {...props} className={`border ${theme === 'dark' ? 'border-gray-600 bg-gray-800' : 'border-gray-300 bg-gray-100'} px-4 py-2`} />
-              ),
-              td: ({ node, ...props }) => (
-                <td {...props} className={`border ${theme === 'dark' ? 'border-gray-600' : 'border-gray-300'} px-4 py-2`} />
-              ),
-            }}
-          >
-            {cleanedText}
-          </ReactMarkdown>
-        </div>
+      {/* Agent Status Display */}
+      {agentStatus && (
+          <div className={`mb-2 rounded-lg p-1.5 px-2.5 inline-block ${theme === 'dark' ? 'bg-white/[0.08]' : 'bg-gray-100'} shadow-sm`}>
+              <div className="flex items-center space-x-1.5">
+                  {/* Optional: Add a small spinner or icon here */}
+                  <span className={`text-xs ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'} opacity-90`}>{agentStatus}</span>
+              </div>
+          </div>
       )}
-      
+
+      {/* Main Message Content */}
+      {/* Render placeholder dots if streaming and cleanedText is empty initially */}
+      {(cleanedText || (isStreaming && !cleanedText && !agentStatus)) && (
+          <div className={`prose ${theme === 'dark' ? 'prose-invert' : ''} prose-sm sm:prose-base max-w-none overflow-hidden`}>
+              <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                      code({ node, inline, className, children, ...props }) {
+                        const match = /language-(\w+)/.exec(className || '');
+                        const codeString = String(children).replace(/\n$/, '');
+                        const [copied, setCopied] = useState(false);
+
+                        const copyToClipboard = (text) => {
+                          navigator.clipboard.writeText(text)
+                            .then(() => {
+                              setCopied(true);
+                              setTimeout(() => setCopied(false), 2000);
+                            })
+                            .catch(err => {
+                              console.error('Failed to copy code: ', err);
+                            });
+                        };
+
+                        return !inline && match ? (
+                          <div className="code-block not-prose my-4 rounded-md overflow-hidden bg-[#1e1e1e] border border-gray-700">
+                            <div className={`flex justify-between items-center px-3 py-1.5 ${theme === 'dark' ? 'bg-gray-800/50' : 'bg-gray-200/80'} border-b border-gray-700`}>
+                              <span className="text-xs font-medium text-gray-400 select-none">{match[1]}</span>
+                              <button
+                                onClick={() => copyToClipboard(codeString)}
+                                className={`flex items-center space-x-1 px-2 py-0.5 rounded text-xs transition-colors ${copied ? 'text-green-400' : theme === 'dark' ? 'text-gray-400 hover:text-white hover:bg-gray-700' : 'text-gray-600 hover:text-black hover:bg-gray-300'}`}
+                                title={copied ? "Copied!" : "Copy code"}
+                              >
+                                {copied ? <TbCopyCheckFilled className="h-3.5 w-3.5" /> : <FaRegCopy className="h-3.5 w-3.5" />}
+                                <span>{copied ? 'Copied' : 'Copy'}</span>
+                              </button>
+                            </div>
+                            <SyntaxHighlighter
+                              style={atomDark}
+                              language={match[1]}
+                              PreTag="div"
+                              customStyle={{
+                                margin: '0',
+                                padding: '0.5rem 0.75rem', // Adjusted padding
+                                background: 'transparent', // Handled by outer div
+                                fontSize: '13px', // Slightly smaller
+                                lineHeight: '1.5',
+                              }}
+                              codeTagProps={{ style: { fontFamily: 'inherit', fontSize: 'inherit' }}} // Use monospace from theme potentially
+                              wrapLines={false}
+                              wrapLongLines={false}
+                              className="code-syntax scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent" // Added scrollbar styling
+                              {...props}
+                            >
+                              {codeString}
+                            </SyntaxHighlighter>
+                          </div>
+                        ) : (
+                          // Inline code styling
+                          <code className={`before:content-[''] after:content-[''] px-1 py-0.5 rounded text-sm ${theme === 'dark' ? 'bg-white/10 text-pink-400' : 'bg-gray-200 text-pink-600'}`} {...props}>
+                            {children}
+                          </code>
+                        );
+                      },
+                      a: ({ node, ...props }) => {
+                        const href = props.href || '';
+                        // Check if it's one of the extracted media URLs before skipping
+                        const isExtractedMedia = extractedImageUrls.includes(href) || extractedMusicUrls.includes(href);
+                        const isOtherMedia = /\.(jpg|jpeg|png|gif|webp|mp3|wav|ogg|m4a)$/i.test(href) ||
+                                              href.includes('musicfy.lol') ||
+                                              href.includes('replicate');
+
+                        if (isExtractedMedia || isOtherMedia) {
+                          return null; // Don't render links for media URLs that will be displayed separately
+                        }
+
+                        return (
+                          <a {...props} target="_blank" rel="noopener noreferrer" className="text-[#cc2b5e] hover:underline" />
+                        );
+                      },
+                       // Add specific styling for lists
+                      ul: ({ node, ordered, ...props }) => <ul className="list-disc list-outside pl-5 space-y-1" {...props} />,
+                      ol: ({ node, ordered, ...props }) => <ol className="list-decimal list-outside pl-5 space-y-1" {...props} />,
+                      li: ({ node, ordered, ...props }) => <li className="leading-relaxed" {...props} />,
+                     // Table styling
+                      table: ({ node, ...props }) => (
+                        <div className="overflow-x-auto my-4 border rounded-md">
+                           <table {...props} className={`w-full border-collapse ${theme === 'dark' ? 'border-gray-700' : 'border-gray-300'}`} />
+                        </div>
+                      ),
+                      thead: ({ node, ...props }) => <thead className={`${theme === 'dark' ? 'bg-gray-800/50' : 'bg-gray-100/80'}`} {...props} />,
+                      th: ({ node, isHeader, ...props }) => (
+                        <th {...props} className={`border-b ${theme === 'dark' ? 'border-gray-700' : 'border-gray-300'} px-3 py-2 text-left font-semibold text-sm`} />
+                      ),
+                      td: ({ node, isHeader, ...props }) => (
+                        <td {...props} className={`border-b ${theme === 'dark' ? 'border-gray-700' : 'border-gray-300'} px-3 py-2 text-sm`} />
+                      ),
+                      // Add cursor for streaming effect only if streaming and it's the last bit of text
+                      p: ({node, children, ...props}) => {
+                        const isLastChild = node === node.parent?.children[node.parent.children.length - 1];
+                        const lastChar = typeof children[children.length - 1] === 'string' ? children[children.length - 1].slice(-1) : '';
+                        const cursorClass = isStreaming && isLastChild && lastChar !== '\n' ? ' streaming-cursor' : '';
+                        return <p {...props} className={`mb-3 last:mb-0${cursorClass}`}>{children}</p>;
+                      },
+                  }}
+              >
+                  {/* Add streaming cursor logic here or via CSS if preferred */}
+                  {isStreaming && !cleanedText && !agentStatus ? '...' : cleanedText}
+              </ReactMarkdown>
+               {/* Add explicit streaming cursor if ReactMarkdown renders nothing */}
+              {isStreaming && !cleanedText && !agentStatus && <span className="streaming-cursor"></span>}
+          </div>
+      )}
+
       {/* Sources dropdown */}
-      {sources.length > 0 && <SourcesDropdown sources={sources} />}
-      
+      {sources.length > 0 && !isStreaming && <SourcesDropdown sources={sources} />}
+
+      {/* Media Display */}
+      {/* Image display */}
       {imageUrls.length > 0 && (
-        <div className="mt-2 space-y-2">
+        <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
           {imageUrls.map((url, index) => (
-            <div key={index} className="relative group">
+            <div key={`img-${index}`} className="relative group aspect-video rounded-lg overflow-hidden border border-gray-700/50">
               <img
                 src={url}
                 alt={`Image ${index + 1}`}
-                className="w-full max-w-full object-contain rounded-lg" 
+                className="w-full h-full object-contain bg-black/20" // Changed object-contain
+                onLoad={onMediaLoaded} // Call when image is actually loaded
                 onError={(e) => {
                   e.target.onerror = null;
-                  e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200' viewBox='0 0 300 200'%3E%3Crect width='300' height='200' fill='%23f0f0f0'/%3E%3Ctext x='50%25' y='50%25' font-family='Arial' font-size='14' text-anchor='middle' dominant-baseline='middle' fill='%23999999'%3EImage Failed to Load%3C/text%3E%3C/svg%3E";
+                  e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200' viewBox='0 0 300 200'%3E%3Crect width='300' height='200' fill='%23333'/%3E%3Ctext x='50%25' y='50%25' font-family='Arial' font-size='14' text-anchor='middle' dominant-baseline='middle' fill='%23999'%3EImage Load Error%3C/text%3E%3C/svg%3E";
+                  if (onMediaLoaded) onMediaLoaded(); // Also call on error to stop loading state
                 }}
               />
               <button
                 onClick={() => handleImageDownload(url)}
-                className="absolute bottom-2 right-2 bg-[#cc2b5e]/80 hover:bg-[#cc2b5e] text-white rounded-full w-10 h-10 flex items-center justify-center transition-all shadow-md"
+                 className="absolute bottom-2 right-2 bg-black/50 hover:bg-black/70 text-white rounded-full w-8 h-8 flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 shadow-md"
                 title="Download image"
               >
                 <FaDownload className="w-4 h-4" />
@@ -384,11 +430,12 @@ const MessageContent = ({ content }) => {
           ))}
         </div>
       )}
-      
+
+       {/* Audio display */}
       {musicUrls.length > 0 && (
-        <div className="mt-3 space-y-4">
+        <div className="mt-3 space-y-3">
           {musicUrls.map((url, index) => (
-            <ModernAudioPlayer key={index} url={url} />
+            <ModernAudioPlayer key={`audio-${index}`} url={url} onAudioLoaded={onMediaLoaded}/>
           ))}
         </div>
       )}
@@ -400,12 +447,20 @@ export default MessageContent;
 
 export const sanitizeContent = (content) => {
   if (!content) return '';
-  
-  return content.replace(
-    /(https?:\/\/\S+\.(jpg|jpeg|png|gif|webp|mp3|wav|ogg|m4a)(\?\S*)?)/gi, 
-    '[media]'
-  ).replace(
-    /(https?:\/\/(?:api\.musicfy\.lol|replicate\.delivery|replicate\.com|\w+\.(?:r2\.cloudflarestorage|cloudfront|amazonaws))\.com\/\S+)/gi,
-    '[media]'
+  // Keep existing logic, maybe refine slightly if needed
+  let sanitized = content.replace(
+    /(https?:\/\/\S+\.(jpg|jpeg|png|gif|webp))(\?\S*)?/gi,
+    '[image]'
   );
+  sanitized = sanitized.replace(
+      /(https?:\/\/\S+\.(mp3|wav|ogg|m4a))(\?\S*)?/gi,
+      '[audio]'
+  );
+  sanitized = sanitized.replace(
+      /(https?:\/\/(?:api\.musicfy\.lol|replicate\.delivery|replicate\.com|\w+\.(?:r2\.cloudflarestorage|cloudfront|amazonaws))\.com\/\S+)/gi,
+      (match) => (/\.(mp3|wav|ogg|m4a)/.test(match) ? '[audio]' : '[media_link]') // Be more specific
+  );
+  // Remove potential markdown image syntax left over
+  sanitized = sanitized.replace(/!\[.*?\]\((?:\[image\]|\[media_link\])\)/g, '[image]');
+  return sanitized;
 }; 

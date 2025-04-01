@@ -42,51 +42,23 @@ const ChatContainer = () => {
 
     // --- Callbacks & Effects ---
 
-    // ScrollToBottom (Ensure reliable scroll target)
+    // ScrollToBottom (Simplified)
     const scrollToBottom = useCallback(() => {
-        if (scrollToBottom.isScrolling) return;
-        scrollToBottom.isScrolling = true;
-
-        requestAnimationFrame(() => {
             if (messagesEndRef.current) {
                 const scrollContainer = messagesEndRef.current.closest('.overflow-y-auto');
                 if (scrollContainer) {
                     scrollContainer.scrollTop = scrollContainer.scrollHeight;
-                }
-                messagesEndRef.current.scrollIntoView({
-                    behavior: 'auto',
-                    block: 'end',
-                });
-            }
-
-            setTimeout(() => {
-                if (messagesEndRef.current) {
-                    const scrollContainer = messagesEndRef.current.closest('.overflow-y-auto');
-                    if (scrollContainer) {
-                        if (scrollContainer.scrollHeight > scrollContainer.clientHeight) {
-                            scrollContainer.scrollTop = scrollContainer.scrollHeight;
-                        }
-                    }
-                }
-                scrollToBottom.isScrolling = false;
-            }, 150);
-        });
-    }, []);
-
-    // Scroll Effect
-    useEffect(() => {
-        if (!isLoadingChat && messages.length > 0) {
-            const lastMessage = messages[messages.length - 1];
-            const shouldScroll = !(lastMessage?.isTemporary && isLoading);
-
-            if (shouldScroll) {
-                const delay = lastMessage?.role === 'user' ? 50 : 150;
-                const scrollTimer = setTimeout(scrollToBottom, delay);
-                return () => clearTimeout(scrollTimer);
             }
         }
-    }, [messages, scrollToBottom, isLoadingChat, isLoading]);
+    }, []);
 
+    // Scroll Effect (Simplified Trigger)
+    useEffect(() => {
+        if (!isLoadingChat) {
+            const scrollTimer = setTimeout(scrollToBottom, 0);
+                return () => clearTimeout(scrollTimer);
+            }
+    }, [messages, scrollToBottom, isLoadingChat]);
 
     // Fetch History Effect
     const fetchChatHistory = useCallback(async () => {
@@ -639,14 +611,11 @@ const ChatContainer = () => {
                         </div>
                     </div>
 
-                    {/* Content Area (Scrollable) */}
-                    {/* Reduced bottom padding */}
                     <div className={`flex-1 overflow-y-auto scroll-smooth min-h-0 scrollbar-hide px-0 ${
                         hasActiveConversation
-                            ? 'pb-2' // Reduced padding from pb-32
+                            ? 'pb-2'
                             : 'flex items-center justify-center'
                     }`}>
-                        {/* This inner container ONLY needs width/margin/padding. Centering is handled by parent. */}
                         <div className={`w-full max-w-[95%] xs:max-w-[90%] sm:max-w-3xl md:max-w-3xl mx-auto pt-4 md:pt-6 ${
                             !hasActiveConversation ? 'text-center' : ''
                         }`}>
@@ -679,8 +648,7 @@ const ChatContainer = () => {
                                         );
                                     })}
 
-                                    {/* --- Loading / Status Indicators Area --- */}
-                                    <div className="w-full max-w-full pl-1 xs:pl-2 sm:pl-0 min-h-[4rem]">
+                                    <div className="w-full max-w-full pl-1 xs:pl-2 sm:pl-0 min-h-[2rem]">
                                         {isGeneratingMedia && (
                                             <div className="mb-4 flex justify-start">
                                                 <MediaLoadingAnimation mediaType={mediaType || generatingMediaType} />
@@ -709,7 +677,6 @@ const ChatContainer = () => {
                                     </div>
                                 </>
                             ) : (
-                                // Welcome screen content
                                 <div className="flex flex-col items-center w-full">
                                     <h1 className="text-xl sm:text-3xl font-bold text-[#cc2b5e]">Welcome to Vaani.pro</h1>
                                     <p className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'} text-sm sm:text-xl mt-1 sm:mt-2`}>How may I help you?</p>
@@ -718,7 +685,6 @@ const ChatContainer = () => {
                                         {predefinedPrompts.map((item) => (
                                             <motion.div
                                                 key={item.id}
-                                                // Added text-left to reset alignment inside the card
                                                 className={`group relative ${theme === 'dark' ? 'bg-white/[0.05] backdrop-blur-xl border border-white/20 hover:bg-white/[0.08] shadow-[0_0_15px_rgba(204,43,94,0.2)] hover:shadow-[0_0_20px_rgba(204,43,94,0.4)]' : 'bg-gray-100 border border-gray-200 hover:bg-gray-200 shadow-md hover:shadow-lg'} rounded-xl p-4 cursor-pointer transition-all duration-150 text-left`}
                                                 whileHover={{ scale: 1.03, transition: { duration: 0.15 } }}
                                                 whileTap={{ scale: 0.98 }}
@@ -732,7 +698,6 @@ const ChatContainer = () => {
                                         ))}
                                     </div>
 
-                                    {/* --- MessageInput for DESKTOP Welcome Screen ONLY --- */}
                                     <div className="hidden md:block w-full max-w-[95%] xs:max-w-[90%] sm:max-w-3xl md:max-w-3xl mx-auto mt-1">
                                         <MessageInput
                                             onSendMessage={handleSendMessage}
@@ -744,20 +709,14 @@ const ChatContainer = () => {
                                             selectedModel={model}
                                         />
                                     </div>
-                                    {/* --- End of Desktop Welcome MessageInput --- */}
                                 </div>
                             )}
                             <div ref={messagesEndRef} className="h-1" />
                         </div>
                     </div>
 
-
-                    {/* Input Container (Fixed Position) */}
-                    {/* Removed border-t classes */}
-                    {/* The top border (border-t) IS applied to this outer div */}
                     <div className={`w-full bottom-0 sticky z-10 px-4 ${!hasActiveConversation ? 'md:hidden' : 'block'}
-                           py-2 pb-safe mb-4 ${theme === 'dark' ? 'bg-black' : 'bg-white '}`}>
-                        {/* This inner div should NOT have the border-t class */}
+                           py-2 pb-safe mb-2 ${theme === 'dark' ? 'bg-black' : 'bg-white '}`}>
                         <div className={`w-full mx-auto flex-shrink-0`}>
                             <MessageInput
                                 onSendMessage={handleSendMessage}
