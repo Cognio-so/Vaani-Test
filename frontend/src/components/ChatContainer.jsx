@@ -640,10 +640,10 @@ const ChatContainer = () => {
                     </div>
 
                     {/* Content Area (Scrollable) */}
-                    {/* Apply flex centering ONLY when no conversation. Remove padding when centering. */}
+                    {/* Increased bottom padding */}
                     <div className={`flex-1 overflow-y-auto scroll-smooth min-h-0 scrollbar-hide px-0 ${
                         hasActiveConversation
-                            ? 'pb-24 md:pb-24' // Padding only when chat is active
+                            ? 'pb-28 md:pb-28' // Increased Padding when chat is active (mobile and desktop)
                             : 'flex items-center justify-center' // Centering when no chat
                     }`}>
                         {/* This inner container ONLY needs width/margin/padding. Centering is handled by parent. */}
@@ -710,7 +710,6 @@ const ChatContainer = () => {
                                 </>
                             ) : (
                                 // Welcome screen content
-                                // Keep flex-col items-center for internal layout of this block
                                 <div className="flex flex-col items-center w-full">
                                     <h1 className="text-xl sm:text-3xl font-bold text-[#cc2b5e]">Welcome to Vaani.pro</h1>
                                     <p className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'} text-sm sm:text-xl mt-1 sm:mt-2`}>How may I help you?</p>
@@ -734,7 +733,7 @@ const ChatContainer = () => {
                                     </div>
 
                                     {/* --- MessageInput for DESKTOP Welcome Screen ONLY --- */}
-                                    <div className="hidden md:block w-full max-w-[95%] xs:max-w-[90%] sm:max-w-3xl md:max-w-3xl mx-auto mt-2">
+                                    <div className="hidden md:block w-full max-w-[95%] xs:max-w-[90%] sm:max-w-3xl md:max-w-3xl mx-auto mt-8">
                                         <MessageInput
                                             onSendMessage={handleSendMessage}
                                             isLoading={isLoading || isLoadingChat}
@@ -754,11 +753,11 @@ const ChatContainer = () => {
 
 
                     {/* Input Container (Fixed Position) */}
-                    {/* Shown always on mobile, shown on desktop ONLY when conversation is active */}
-                    <div className={`w-full bottom-0 sticky z-10 ${!hasActiveConversation ? 'md:hidden' : 'block'}`}>
-                        <div className={`w-full mx-auto flex-shrink-0 py-2
-                               ${theme === 'dark' ? 'bg-black' : 'bg-white'}`}>
-                             {/* The max-width was removed from here previously, let's add it back if needed, but it might be better inside MessageInput itself */}
+                    {/* Apply background, border, and padding directly to the sticky container */}
+                    <div className={`w-full bottom-0 sticky z-10 ${!hasActiveConversation ? 'md:hidden' : 'block'}
+                           py-2 ${theme === 'dark' ? 'bg-black ' : 'bg-white'}`}>
+                        <div className={`w-full mx-auto flex-shrink-0`}>
+                             {/* Removed padding and background/border from here */}
                             <MessageInput
                                 onSendMessage={handleSendMessage}
                                 isLoading={isLoading || isLoadingChat}
