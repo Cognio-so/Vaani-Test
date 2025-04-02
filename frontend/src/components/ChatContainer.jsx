@@ -178,17 +178,15 @@ const ChatContainer = () => {
     useEffect(() => {
         let timeoutId;
         if (isGeneratingMedia) {
-            // Further reduced timeouts for both music and images
-            const timeoutDuration = mediaType === 'music' || generatingMediaType === 'audio' 
-                ? 25000  // 25 seconds for music (reduced from 30)
-                : 10000; // 10 seconds for images (reduced from 15)
+            // Reduced timeout for media generation
+            const timeoutDuration = mediaType === 'music' || generatingMediaType === 'audio' ? 30000 : 15000;
             
             timeoutId = setTimeout(() => {
                 setIsGeneratingMedia(false);
                 setGeneratingMediaType(null);
                 setMediaType(null);
                 console.warn("Media generation timed out or failed to clear state.");
-            }, timeoutDuration);
+            }, timeoutDuration); // 30 seconds for music (reduced from 35), 15 seconds for other media
         }
         return () => {
             if (timeoutId) clearTimeout(timeoutId);
@@ -411,7 +409,7 @@ const ChatContainer = () => {
                                     setIsGeneratingMedia(false);
                                     setGeneratingMediaType(null);
                                     setMediaType(null);
-                                }, 15000); // 15 seconds for audio to load (reduced from 20)
+                                }, 20000); // 20 seconds for audio to load (reduced from 25)
                             }
 
                             const isMediaResp = /jpe?g|png|gif|webp|replicate|image-url|!\[.*?\)|mp3|wav|ogg|musicfy|audio-url/i.test(finalMessageData.content);
