@@ -101,27 +101,6 @@ export const MediaLoadingAnimation = ({ mediaType }) => {
                       }}
                     ></div>
                   ))}
-                  
-                  {/* Frequency visualization - reduced size */}
-                  <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 flex items-end space-x-0.5">
-                    {[...Array(12)].map((_, i) => {
-                      const middleIndex = 6;
-                      const distFromMiddle = Math.abs(i - middleIndex);
-                      const heightPercentage = 100 - (distFromMiddle * 12);
-                      
-                      return (
-                        <div 
-                          key={i}
-                          className="w-0.5 bg-gradient-to-t from-[#cc2b5e] to-[#cc2b5e]/20 rounded-t-full"
-                          style={{ 
-                            height: `${heightPercentage * 0.12}rem`,
-                            animation: 'musicBars 1.5s ease-in-out infinite',
-                            animationDelay: `${i * 0.05}s`,
-                          }}
-                        ></div>
-                      );
-                    })}
-                  </div>
                 </div>
                 
                 <div className="text-center">

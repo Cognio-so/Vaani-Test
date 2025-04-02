@@ -200,7 +200,7 @@ const SourcesDropdown = ({ sources }) => {
   );
 };
 
-const MessageContent = ({ content }) => {
+const MessageContent = ({ content, onMediaLoaded, forceImageDisplay, forceAudioDisplay, isStreaming, agentStatus }) => {
   const { theme } = useContext(ThemeContext);
   // Extract media first
   const { text, imageUrls, musicUrls } = extractMediaUrls(content);
@@ -372,7 +372,9 @@ const MessageContent = ({ content }) => {
                 src={url}
                 alt={`Image ${index + 1}`}
                 className="w-full max-w-full object-contain rounded-lg" 
+                onLoad={onMediaLoaded}
                 onError={(e) => {
+                  if (onMediaLoaded) onMediaLoaded();
                   e.target.onerror = null;
                   e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200' viewBox='0 0 300 200'%3E%3Crect width='300' height='200' fill='%23f0f0f0'/%3E%3Ctext x='50%25' y='50%25' font-family='Arial' font-size='14' text-anchor='middle' dominant-baseline='middle' fill='%23999999'%3EImage Failed to Load%3C/text%3E%3C/svg%3E";
                 }}
@@ -392,7 +394,7 @@ const MessageContent = ({ content }) => {
       {musicUrls.length > 0 && (
         <div className="mt-3 space-y-4">
           {musicUrls.map((url, index) => (
-            <ModernAudioPlayer key={index} url={url} />
+            <ModernAudioPlayer key={index} url={url} onMediaLoaded={onMediaLoaded} />
           ))}
         </div>
       )}

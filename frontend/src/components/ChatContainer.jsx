@@ -178,18 +178,22 @@ const ChatContainer = () => {
     useEffect(() => {
         let timeoutId;
         if (isGeneratingMedia) {
-            // Set a timeout to clear the generating state after 60 seconds
+            // Further reduced timeouts for both music and images
+            const timeoutDuration = mediaType === 'music' || generatingMediaType === 'audio' 
+                ? 25000  // 25 seconds for music (reduced from 30)
+                : 10000; // 10 seconds for images (reduced from 15)
+            
             timeoutId = setTimeout(() => {
                 setIsGeneratingMedia(false);
                 setGeneratingMediaType(null);
                 setMediaType(null);
                 console.warn("Media generation timed out or failed to clear state.");
-            }, 60000);
+            }, timeoutDuration);
         }
         return () => {
             if (timeoutId) clearTimeout(timeoutId);
         };
-    }, [isGeneratingMedia]);
+    }, [isGeneratingMedia, mediaType, generatingMediaType]);
 
     useEffect(() => {
         if (!isGeneratingMedia && (generatingMediaType || mediaType)) {
@@ -311,24 +315,23 @@ const ChatContainer = () => {
 
     const handleChatStreamingRequest = useCallback(async (userMessage, options) => {
         setIsLoading(true);
-        setAgentStatus("");
+        
+        // Check if this is a media request to prevent showing agent status
         const msgText = userMessage.content.toLowerCase();
-        const isMedia = /generate|create|make/.test(msgText) && /image|picture|music|audio|song/.test(msgText);
-        let isMediaReq = false, genMediaType = null, medType = null;
-
+        const isMedia = /generate|create|make|compose/.test(msgText) && /image|picture|music|audio|song|melody/.test(msgText);
+        const isWebSearch = options.deep_research || options.use_agent;
+        
+        // If it's a media request, don't show agent status
         if (isMedia) {
-            isMediaReq = true;
-            genMediaType = /image|picture/.test(msgText) ? 'image' : 'audio';
-            medType = genMediaType === 'image' ? 'image' : 'music';
-            setIsGeneratingMedia(true);
-            setGeneratingMediaType(genMediaType);
-            setMediaType(medType);
+            setAgentStatus("");
+        } else if (isWebSearch) {
+            setAgentStatus("Initializing...");
         }
-
+        
         const tempMessageId = `temp_assistant_${Date.now()}`;
         let finalThreadId = threadId || chatIdRef.current;
 
-        if (!isMediaReq) {
+        if (!isMedia) {
             setMessages(prev => [...prev, { role: 'assistant', content: '', isTemporary: true, isLoading: true, id: tempMessageId }]);
         }
 
@@ -377,13 +380,16 @@ const ChatContainer = () => {
                         const data = JSON.parse(line);
 
                         if (data.type === "status") {
-                            setAgentStatus(data.status);
-                            if (!isMediaReq) {
-                                setMessages(prev => prev.map(msg => msg.id === tempMessageId ? { ...msg, agentStatus: data.status } : msg));
+                            // Only update agent status if not a media request
+                            if (!isMedia) {
+                                setAgentStatus(data.status);
+                                if (!isMediaReq) {
+                                    setMessages(prev => prev.map(msg => msg.id === tempMessageId ? { ...msg, agentStatus: data.status } : msg));
+                                }
                             }
                         } else if (data.type === "chunk") {
                             fullResponse += data.chunk;
-                            if (!isMediaReq) {
+                            if (!isMedia) {
                                 setMessages(prev => prev.map(msg => msg.id === tempMessageId ? { ...msg, content: fullResponse, isLoading: true, isTemporary: true } : msg));
                             }
                         } else if (data.type === "done" || data.type === "result") {
@@ -398,15 +404,22 @@ const ChatContainer = () => {
                                 agentStatus: undefined
                             };
 
+                            // Reduced timeout for audio
+                            const isAudioResponse = /https:\/\/api\.musicfy\.lol|\.mp3|\.wav|\.ogg/i.test(finalContent);
+                            if (isAudioResponse) {
+                                setTimeout(() => {
+                                    setIsGeneratingMedia(false);
+                                    setGeneratingMediaType(null);
+                                    setMediaType(null);
+                                }, 15000); // 15 seconds for audio to load (reduced from 20)
+                            }
+
                             const isMediaResp = /jpe?g|png|gif|webp|replicate|image-url|!\[.*?\)|mp3|wav|ogg|musicfy|audio-url/i.test(finalMessageData.content);
 
                             setMessages(prev => {
                                 let updatedMessages;
-                                if (isMediaReq) {
+                                if (isMedia) {
                                     updatedMessages = [...prev.filter(m => m.id !== tempMessageId), finalMessageData];
-                                    if (!isMediaResp) {
-                                        setIsGeneratingMedia(false);
-                                    }
                                 } else {
                                     updatedMessages = prev.map(msg => msg.id === tempMessageId ? finalMessageData : msg);
                                 }
@@ -424,6 +437,12 @@ const ChatContainer = () => {
                                 setIsGeneratingMedia(false);
                                 setGeneratingMediaType(null);
                                 setMediaType(null);
+                            } else if (isMediaResp) {
+                                setTimeout(() => {
+                                    setIsGeneratingMedia(false);
+                                    setGeneratingMediaType(null);
+                                    setMediaType(null);
+                                }, 5000);
                             }
                             break;
                         }
@@ -445,7 +464,7 @@ const ChatContainer = () => {
                 setMessages(prev => {
                     const finalContent = fullResponse || "[Incomplete Response]";
                     let updatedMessages;
-                    if (isMediaReq) {
+                    if (isMedia) {
                         updatedMessages = [...prev, { role: 'assistant', content: finalContent, isTemporary: false, isLoading: false }];
                     } else {
                         updatedMessages = prev.map(msg => msg.id === tempMessageId ? { ...msg, content: finalContent, isTemporary: false, isLoading: false, agentStatus: undefined } : msg);
@@ -477,6 +496,21 @@ const ChatContainer = () => {
             role: 'user',
             content: messageData.content
         };
+
+        // Detect media generation requests more precisely
+        const msgText = messageData.content.toLowerCase();
+        const isMusicRequest = /generat|creat|mak|compos/.test(msgText) && /music|audio|song|tune|melody|track/.test(msgText);
+        const isImageRequest = /generat|creat|mak|draw/.test(msgText) && /image|picture|photo|draw|art/.test(msgText);
+        
+        // Clear agent status for media requests to prevent web-search animations
+        if (isMusicRequest || isImageRequest) {
+            setAgentStatus("");
+            if (isMusicRequest) {
+                handleMediaRequested('audio');
+            } else if (isImageRequest) {
+                handleMediaRequested('image');
+            }
+        }
 
         if (options.file_url) {
             const fileUrl = options.file_url;
@@ -598,9 +632,11 @@ const ChatContainer = () => {
     }, []);
 
     const handleMediaLoaded = useCallback(() => {
+        // Clear all animations and status indicators
         setIsGeneratingMedia(false);
         setGeneratingMediaType(null);
         setMediaType(null);
+        setAgentStatus(""); // Explicitly clear agent status
     }, []);
 
 

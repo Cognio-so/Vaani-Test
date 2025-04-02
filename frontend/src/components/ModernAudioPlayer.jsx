@@ -1,6 +1,6 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 
-const ModernAudioPlayer = ({ url }) => {
+const ModernAudioPlayer = ({ url, onMediaLoaded }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -88,6 +88,26 @@ const ModernAudioPlayer = ({ url }) => {
 
   const bars = useMemo(generateBars, [url]);
   const progressPercent = duration > 0 ? (progress / duration) * 100 : 0;
+
+  useEffect(() => {
+    if (audioRef.current && onMediaLoaded) {
+      const handleCanPlay = () => onMediaLoaded();
+      const handleMetadataLoaded = () => onMediaLoaded();
+      
+      audioRef.current.addEventListener('canplay', handleCanPlay);
+      audioRef.current.addEventListener('loadedmetadata', handleMetadataLoaded);
+      
+      // Also call immediately if already loaded
+      if (audioRef.current.readyState >= 2) {
+        onMediaLoaded();
+      }
+      
+      return () => {
+        audioRef.current?.removeEventListener('canplay', handleCanPlay);
+        audioRef.current?.removeEventListener('loadedmetadata', handleMetadataLoaded);
+      };
+    }
+  }, [onMediaLoaded]);
 
   return (
     <div className="bg-[#2a2a2a] rounded-xl overflow-hidden max-w-sm">
