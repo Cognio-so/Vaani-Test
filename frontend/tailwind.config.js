@@ -18,7 +18,8 @@ export default {
         'shimmer': 'shimmer 2s infinite linear',
         'sound-wave': 'soundWave 1.5s infinite ease-in-out',
         'bounce': 'bounce 1s infinite',
-        'blink': 'blink 1.5s infinite ease-in-out'
+        'blink': 'blink 1.5s infinite ease-in-out',
+        'shine': 'shine 3s ease-in-out infinite',
       },
       keyframes: {
         shimmer: {
@@ -32,7 +33,11 @@ export default {
         blink: {
           '0%, 100%': { opacity: '1' },
           '50%': { opacity: '0.3' }
-        }
+        },
+        shine: {
+          '0%': { 'background-position': '-200% center' },
+          '100%': { 'background-position': '200% center' },
+        },
       },
       margin: {
         'safe': 'env(safe-area-inset-bottom, 0px)'
