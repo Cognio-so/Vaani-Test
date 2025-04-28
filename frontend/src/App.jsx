@@ -5,6 +5,7 @@ import SignupPage from './pages/SignupPage'
 import LoginPage from './pages/LoginPage'
 import Settings from './components/Settings'
 import HomePage from './pages/Homepage'
+import CustomAgentPage from './pages/CustomAgentPage'
 import LoadingSpinner from './components/LoadingSpinner'
 import { AuthProvider, useAuth } from './context/AuthContext'
 
@@ -70,6 +71,11 @@ function AppRoutes() {
       } />
       <Route path='/signup' element={<SignupPage />} />
       <Route path='/login' element={<LoginPage />} />
+      <Route path='/custom-agent' element={
+        <ProtectedRoute>
+          <CustomAgentPage />
+        </ProtectedRoute>
+      } />
       <Route path='/settings' element={
         <ProtectedRoute>
           <Settings />

@@ -2,6 +2,7 @@ import React from 'react';
 import { RiHome4Line, RiHistoryLine, RiSettings4Line, RiLogoutBoxLine } from 'react-icons/ri';
 import { BsCollection, BsPlusCircle} from 'react-icons/bs';
 import { FaAlignLeft , FaAlignRight } from 'react-icons/fa';
+import { GiArtificialIntelligence } from 'react-icons/gi';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
@@ -87,6 +88,14 @@ const Sidebar = ({ isVisible, onToggle, onOpenSettings, onOpenHistory, onNewChat
                                 <BsPlusCircle className="text-lg sm:text-xl" />
                                 <span className="hidden lg:block text-sm sm:text-base">New Chat</span>
                             </button>
+                        </li>
+                        <li>
+                            <Link to="/custom-agent" className={`flex items-center space-x-2 sm:space-x-3 p-1.5 sm:p-2 rounded-lg ${
+                                theme === 'dark' ? 'hover:bg-white/10' : 'hover:bg-gray-100'
+                            } transition-all`}>
+                                <GiArtificialIntelligence className="text-lg sm:text-xl" />
+                                <span className="hidden lg:block text-sm sm:text-base">Custom Agent</span>
+                            </Link>
                         </li>
                         <li>
                             <button 
