@@ -37,30 +37,13 @@ app.use(cookieParser());
 
 // CORS configuration
 app.use(cors({
-  origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps, curl requests)
-    if (!origin) return callback(null, true);
-    
-    // List of allowed origins (can be from env vars)
-    const allowedOrigins = [
-      process.env.FRONTEND_URL,
-      // Add other origins if needed
-    ];
-    
-    if (allowedOrigins.indexOf(origin) === -1) {
-      console.log(`Origin ${origin} not allowed by CORS`);
-      // Still allow the request for better compatibility
-      return callback(null, true);
-    }
-    
-    return callback(null, true);
-  },
+  origin: process.env.FRONTEND_URL,
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],  // Add OPTIONS for CORS preflight
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With']
 }));
 
-// Add a specific preflight handler for cookies
+// Add a preflight handler for cookies
 app.options('*', cors());
 
 // Enable trust proxy for Vercel

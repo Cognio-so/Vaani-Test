@@ -279,22 +279,13 @@ export const AuthProvider = ({ children }) => {
       // Set auth flow flag
       localStorage.setItem('googleAuthInProgress', 'true');
       
-      // Browser detection
-      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      
-      // Cache busting timestamp
+      // Add cache-busting timestamp and keep the consent parameter
       const timestamp = Date.now();
+      const googleAuthUrl = `${API_URL}/auth/google?` +
+        `t=${timestamp}&` +
+        `prompt=consent+select_account`;  // Keep the consent parameter
       
-      // Base URL
-      let googleAuthUrl = `${API_URL}/auth/google?t=${timestamp}`;
-      
-      // Only add prompt for non-Safari browsers
-      if (!isSafari) {
-        googleAuthUrl += `&prompt=consent+select_account`;
-      }
-      
-      // Use window.location.href for redirection
+      // Use window.location.href for consistent behavior
       window.location.href = googleAuthUrl;
     } catch (error) {
       console.error('Google sign-in error:', error);
