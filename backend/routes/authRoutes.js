@@ -11,13 +11,13 @@ router.post('/refresh-token', refreshToken);
 router.get('/check-auth', protectRoutes, checkAuth);
 router.get('/profile', protectRoutes, getProfile);
 
-// Google Auth Routes - simpler configuration
+// Google Auth Routes with proper consent parameter
 router.get('/google', 
   (req, res, next) => {
     passport.authenticate('google', {
       scope: ['profile', 'email'],
       accessType: 'offline',
-      prompt: 'select_account'
+      prompt: 'consent select_account'
     })(req, res, next);
   }
 );

@@ -279,9 +279,11 @@ export const AuthProvider = ({ children }) => {
       // Set auth flow flag
       localStorage.setItem('googleAuthInProgress', 'true');
       
-      // Add cache-busting timestamp parameter
+      // Add cache-busting timestamp and keep the consent parameter
       const timestamp = Date.now();
-      const googleAuthUrl = `${API_URL}/auth/google?t=${timestamp}`;
+      const googleAuthUrl = `${API_URL}/auth/google?` +
+        `t=${timestamp}&` +
+        `prompt=consent+select_account`;  // Keep the consent parameter
       
       // Use window.location.href for consistent behavior
       window.location.href = googleAuthUrl;
