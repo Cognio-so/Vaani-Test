@@ -176,6 +176,31 @@ export const AuthProvider = ({ children }) => {
     };
   }, [navigate]);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const authParam = params.get('auth');
+    const userParam = params.get('user');
+    const tokenParam = params.get('token');
+    const authSuccess = params.get('authSuccess');
+    
+    if (authParam === 'google' && userParam && tokenParam && authSuccess) {
+      try {
+        const userData = JSON.parse(decodeURIComponent(userParam));
+        
+        // Store token in localStorage
+        localStorage.setItem('accessToken', tokenParam);
+        
+        // Update state with user info
+        setUser(userData);
+        
+        // Clear URL params
+        window.history.replaceState({}, document.title, '/chat');
+      } catch (error) {
+        console.error('Error processing auth callback:', error);
+      }
+    }
+  }, []);
+
   const checkAuthStatus = async () => {
     try {
       const response = await fetchWithCredentials('/auth/check-auth');

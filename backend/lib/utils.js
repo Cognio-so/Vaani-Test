@@ -17,11 +17,11 @@ const sendTokens = (userId, res) => {
   const accessToken = generateAccessToken(userId);
   const refreshToken = generateRefreshToken(userId);
 
-  // Set cookies
+  // Set cookies with proper cross-domain settings
   res.cookie("accessToken", accessToken, {
     httpOnly: true,
     secure: true,
-    sameSite: 'none',
+    sameSite: 'none', // Crucial for cross-domain requests
     path: "/",
     maxAge: 15 * 60 * 1000, // 15 minutes
   });
@@ -29,7 +29,7 @@ const sendTokens = (userId, res) => {
   res.cookie("refreshToken", refreshToken, {
     httpOnly: true,
     secure: true,
-    sameSite: 'none',
+    sameSite: 'none', // Crucial for cross-domain requests
     path: "/",
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   });

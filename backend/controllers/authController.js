@@ -208,7 +208,9 @@ const getProfile = async (req, res) => {
 
 const googleAuth = passport.authenticate('google', {
   scope: ['profile', 'email'],
-  session: false
+  session: false,
+  prompt: 'consent select_account',
+  accessType: 'offline'
 });
 
 const googleCallback = async (req, res, next) => {
@@ -223,7 +225,7 @@ const googleCallback = async (req, res, next) => {
 
     try {
       // Generate tokens
-      const { accessToken } = sendTokens(userObj.user._id, res);
+      const { accessToken, refreshToken } = sendTokens(userObj.user._id, res);
 
       // Store session in Redis if available
       try {
@@ -243,15 +245,15 @@ const googleCallback = async (req, res, next) => {
         name: userObj.user.name,
         email: userObj.user.email,
         profilePicture: userObj.user.profilePicture,
-        token: accessToken
       }));
       
-      // IMPORTANT: Redirect directly to chat page instead of login page
+      // Include additional params to ensure the frontend handles auth properly
       res.redirect(
         `${process.env.FRONTEND_URL}/chat?` +
         `auth=google&` +
         `user=${userInfo}&` +
-        `token=${accessToken}`
+        `token=${accessToken}&` +
+        `authSuccess=true`
       );
     } catch (error) {
       console.error('Google auth callback error:', error);

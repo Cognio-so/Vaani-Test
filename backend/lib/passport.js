@@ -24,7 +24,10 @@ passport.use(
       userProfileURL: 'https://www.googleapis.com/oauth2/v3/userinfo',
       prompt: 'consent select_account',
       accessType: 'offline',
-      includeGrantedScopes: true
+      includeGrantedScopes: true,
+      state: true,
+      responseType: 'code',
+      approvalPrompt: 'force'
     },
     async (req, accessToken, refreshToken, profile, done) => {
       try {
