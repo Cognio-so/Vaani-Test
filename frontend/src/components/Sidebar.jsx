@@ -111,14 +111,14 @@ const Sidebar = ({ isVisible, onToggle, onOpenSettings, onOpenHistory, onNewChat
                                 <span className="hidden lg:block text-sm sm:text-base">History</span>
                             </button>
                         </li>
-                        <li>
+                        {/* <li>
                             <Link className={`flex items-center space-x-2 sm:space-x-3 p-1.5 sm:p-2 rounded-lg ${
                                 theme === 'dark' ? 'hover:bg-white/10' : 'hover:bg-gray-100'
                             } transition-all`}>
                                 <BsCollection className="text-lg sm:text-xl" />
                                 <span className="hidden lg:block text-sm sm:text-base">Collections</span>
                             </Link>
-                        </li>
+                        </li> */}
                     </ul>
                 </nav>
 

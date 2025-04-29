@@ -26,10 +26,14 @@ const ProtectedRoute = ({ children }) => {
       
       if (isGoogleAuth) {
         const userInfo = urlParams.get('user');
+        const token = urlParams.get('token');
         if (userInfo) {
           try {
             const userData = JSON.parse(decodeURIComponent(userInfo));
-            sessionStorage.setItem('user', JSON.stringify(userData));
+            // Store token in localStorage if available
+            if (token) {
+              localStorage.setItem('access_token', token);
+            }
             setHasUser(true);
           } catch (error) {
             console.error('Error parsing Google auth user data:', error);
@@ -38,8 +42,9 @@ const ProtectedRoute = ({ children }) => {
       } else if (user) {
         setHasUser(true);
       } else {
-        const savedUser = sessionStorage.getItem('user');
-        if (savedUser) {
+        // Check for token instead of saved user
+        const accessToken = localStorage.getItem('access_token');
+        if (accessToken) {
           setHasUser(true);
         }
       }
@@ -105,8 +110,6 @@ function App() {
       document.body.classList.remove('light-theme');
     }
   }, [theme]);
-
- 
 
   return (
     <ThemeContext.Provider value={{ theme, setTheme }}>

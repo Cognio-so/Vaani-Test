@@ -2,7 +2,9 @@ const User = require("../model/userModel");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const passport = require('../lib/passport');
-const { generateToken } = require('../lib/utils');
+const { sendTokens } = require('../lib/utils');
+const { redisHelper } = require('../config/redis');
+const sessionManager = require('../middleware/sessionManager');
 
 const Signup = async (req, res) => {
   const { name, email, password } = req.body;
@@ -25,13 +27,14 @@ const Signup = async (req, res) => {
     const newUser = new User({ name, email, password: hashedPassword });
 
     if (newUser) {
-      generateToken(newUser._id, res);
+      const { accessToken } = sendTokens(newUser._id, res);
       await newUser.save();
 
       res.status(201).json({
         _id: newUser._id,
         name: newUser.name,
         email: newUser.email,
+        token: accessToken
       });
     } else {
       res.status(400).json({ message: "Invalid user data" });
@@ -42,58 +45,145 @@ const Signup = async (req, res) => {
   }
 };
 
+// Rate limiting configuration
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOGIN_BLOCK_DURATION = 15 * 60; // 15 minutes in seconds
+
 const Login = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    console.log(`Login attempt for email: ${email}`);
-    
-    if (!email || !password) {
-      return res.status(400).json({ message: "All fields are required" });
+    // Check rate limiting
+    const attemptsKey = `login_attempts:${email}`;
+    const attempts = await redisHelper.get(attemptsKey) || 0;
+
+    if (attempts >= MAX_LOGIN_ATTEMPTS) {
+      return res.status(429).json({ 
+        message: "Too many login attempts. Please try again later." 
+      });
     }
 
     const user = await User.findOne({ email });
     if (!user) {
+      await redisHelper.incr(attemptsKey);
+      await redisHelper.expire(attemptsKey, LOGIN_BLOCK_DURATION);
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
+      await redisHelper.incr(attemptsKey);
+      await redisHelper.expire(attemptsKey, LOGIN_BLOCK_DURATION);
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    console.log("Found user, generating token...");
-    
-    generateToken(user._id, res);
-    
-    console.log("Token generated successfully");
+    // Reset login attempts on successful login
+    await redisHelper.del(attemptsKey);
+
+    // Generate tokens
+    const { accessToken, refreshToken } = sendTokens(user._id, res);
+
+    // Store session data in Redis
+    await sessionManager.createSession(user._id, {
+      userId: user._id,
+      email: user.email,
+      lastLogin: new Date(),
+      accessToken
+    });
 
     res.status(200).json({
       _id: user._id,
       name: user.name,
       email: user.email,
+      token: accessToken
     });
   } catch (error) {
     console.error("Error in login controller:", error);
-    res.status(500).json({ 
-      message: "Internal Server Error",
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined 
-    });
+    res.status(500).json({ message: "Internal Server Error" });
   }
 };
 
 const Logout = async (req, res) => {
   try {
-    res.cookie('jwt', '', {
+    // Get user ID from either req.user or token
+    let userId;
+    try {
+      userId = req.user?._id;
+      
+      // If userId exists, try to clear Redis session
+      if (userId) {
+        try {
+          await sessionManager.deleteSession(userId);
+        } catch (error) {
+          console.error('Session deletion error:', error);
+          // Continue with logout even if session deletion fails
+        }
+      }
+    } catch (error) {
+      console.error('Error getting user ID:', error);
+      // Continue with logout even if we can't get the user ID
+    }
+    
+    // Clear cookies regardless of user status
+    res.cookie('accessToken', '', {
       httpOnly: true,
-      secure:true,
+      secure: true,
       sameSite: 'none',
       path: '/',
       maxAge: 0
     });
+    
+    res.cookie('refreshToken', '', {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+      path: '/',
+      maxAge: 0
+    });
+    
     res.status(200).json({ message: "Logged out successfully" });
   } catch (error) {
-    console.log("Error in logout controller", error.message);
+    console.error("Error in logout controller:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+const refreshToken = async (req, res) => {
+  try {
+    const refreshToken = req.cookies.refreshToken;
+    
+    if (!refreshToken) {
+      return res.status(401).json({ message: "No refresh token" });
+    }
+    
+    try {
+      const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+      const user = await User.findById(decoded.userId).select("-password");
+      
+      if (!user) {
+        return res.status(401).json({ message: "User not found" });
+      }
+      
+      // Generate new tokens
+      const { accessToken } = sendTokens(user._id, res);
+      
+      res.status(200).json({
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        token: accessToken
+      });
+    } catch (error) {
+      if (error.name === 'JsonWebTokenError') {
+        return res.status(401).json({ message: "Invalid refresh token" });
+      }
+      if (error.name === 'TokenExpiredError') {
+        return res.status(401).json({ message: "Refresh token expired" });
+      }
+      throw error;
+    }
+  } catch (error) {
+    console.log("Error in refresh token controller", error.message);
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
@@ -116,7 +206,6 @@ const getProfile = async (req, res) => {
   }
 };
 
-
 const googleAuth = passport.authenticate('google', {
   scope: ['profile', 'email'],
   session: false
@@ -127,30 +216,44 @@ const googleCallback = async (req, res, next) => {
     session: false,
     failureRedirect: `${process.env.FRONTEND_URL}/login?error=auth_failed`
   }, async (err, userObj) => {
-    if (err || !userObj || !userObj.token) {
+    if (err || !userObj || !userObj.user) {
       console.error('Google auth error:', err);
       return res.redirect(`${process.env.FRONTEND_URL}/login?error=auth_failed`);
     }
 
     try {
-      // Always use consistent cookie settings regardless of environment
-      res.cookie('jwt', userObj.token, {
-        httpOnly: true,
-        secure: true,  // Always true for cross-site
-        sameSite: 'none',  // Required for cross-site cookies
-        path: '/',
-        maxAge: 30 * 24 * 60 * 60 * 1000
-      });
+      // Generate tokens
+      const { accessToken } = sendTokens(userObj.user._id, res);
+
+      // Store session in Redis if available
+      try {
+        await sessionManager.createSession(userObj.user._id, {
+          userId: userObj.user._id,
+          email: userObj.user.email,
+          lastLogin: new Date(),
+          accessToken
+        });
+      } catch (error) {
+        console.error('Session creation error:', error);
+      }
 
       // Enhanced error handling for user info
       const userInfo = encodeURIComponent(JSON.stringify({
-        _id: userObj.user._id,  // Fix: Use _id to match your data structure
+        _id: userObj.user._id,
         name: userObj.user.name,
         email: userObj.user.email,
-        profilePicture: userObj.user.profilePicture
+        profilePicture: userObj.user.profilePicture,
+        token: accessToken
       }));
       
-      res.redirect(`${process.env.FRONTEND_URL}/chat?auth=google&user=${userInfo}`);
+      // Redirect to login first with auth data
+      res.redirect(
+        `${process.env.FRONTEND_URL}/login?` +
+        `auth=google&` +
+        `user=${userInfo}&` +
+        `token=${accessToken}&` +
+        `prompt=consent`
+      );
     } catch (error) {
       console.error('Google auth callback error:', error);
       res.redirect(`${process.env.FRONTEND_URL}/login?error=auth_failed`);
@@ -162,6 +265,7 @@ module.exports = {
   Signup, 
   Login, 
   Logout, 
+  refreshToken,
   checkAuth, 
   getProfile, 
   googleAuth,

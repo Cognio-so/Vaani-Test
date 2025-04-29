@@ -21,7 +21,10 @@ passport.use(
       scope: ['profile', 'email'],
       passReqToCallback: true,
       proxy: true,
-      userProfileURL: 'https://www.googleapis.com/oauth2/v3/userinfo'
+      userProfileURL: 'https://www.googleapis.com/oauth2/v3/userinfo',
+      prompt: 'consent select_account',
+      accessType: 'offline',
+      includeGrantedScopes: true
     },
     async (req, accessToken, refreshToken, profile, done) => {
       try {

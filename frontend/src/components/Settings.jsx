@@ -98,42 +98,35 @@ const Settings = ({ isOpen, onClose }) => {
                         <h3 className={`text-lg sm:text-xl md:text-2xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>Account Settings</h3>
                         <div className="space-y-3 sm:space-y-4">
                             <div className="flex items-center space-x-3 sm:space-x-4">
-                                <div className={`w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 ${theme === 'dark' ? 'bg-black/40 border-white/10' : 'bg-gray-100 border-gray-300'} rounded-full border flex items-center justify-center relative z-[100]`}>
-                                    {user && user.name ? (
-                                        <span className={`text-lg sm:text-xl md:text-2xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>
-                                            {user.name.charAt(0).toUpperCase()}
-                                        </span>
+                                <div className={`w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full border ${theme === 'dark' ? 'border-white/10' : 'border-gray-300'} overflow-hidden flex items-center justify-center relative z-[100]`}>
+                                    {user?.profilePicture ? (
+                                        <img 
+                                            src={user.profilePicture} 
+                                            alt={user.name || "Profile"} 
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                                e.target.onerror = null;
+                                                e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23cc2b5e'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/%3E%3C/svg%3E";
+                                            }}
+                                        />
                                     ) : (
-                                        <span className={`text-lg sm:text-xl md:text-2xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>U</span>
+                                        <span className={`text-lg sm:text-xl md:text-2xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>
+                                            {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                                        </span>
                                     )}
+                                </div>
+                                <div>
+                                    <p className={`text-sm sm:text-base font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>
+                                        {user?.name || 'User'}
+                                    </p>
+                                    <p className={`text-xs sm:text-sm ${theme === 'dark' ? 'text-white/60' : 'text-gray-600'}`}>
+                                        {user?.email || 'No email'}
+                                    </p>
                                 </div>
                             </div>
                             
-                            <div className={`${theme === 'dark' ? 'bg-black/20' : 'bg-gray-50'} p-3 sm:p-4 rounded-lg`}>
-                                <h4 className={`text-xs sm:text-sm font-medium mb-2 ${theme === 'dark' ? 'text-white/80' : 'text-gray-600'}`}>Current User Information</h4>
-                                <p className={`${theme === 'dark' ? 'text-white' : 'text-gray-800'} mb-1 text-xs sm:text-sm`}>
-                                    <span className={`${theme === 'dark' ? 'text-white/60' : 'text-gray-500'} mr-2`}>Name:</span> 
-                                    {user?.name || 'Not set'}
-                                </p>
-                                <p className={`${theme === 'dark' ? 'text-white' : 'text-gray-800'} text-xs sm:text-sm`}>
-                                    <span className={`${theme === 'dark' ? 'text-white/60' : 'text-gray-500'} mr-2`}>Email:</span> 
-                                    {user?.email || 'Not set'}
-                                </p>
-                            </div>
-                            
-                            <input 
-                                type="text" 
-                                placeholder="Name" 
-                                className={`w-full ${theme === 'dark' ? 'bg-black/40 text-white border-white/10 placeholder-white/40' : 'bg-gray-100 text-gray-800 border-gray-300 placeholder-gray-500/40'} rounded-md px-3 py-1.5 sm:px-4 sm:py-2 border text-sm sm:text-base`}
-                                defaultValue={user?.name || ''}
-                            />
-                            <input 
-                                type="email" 
-                                placeholder="Email" 
-                                className={`w-full ${theme === 'dark' ? 'bg-black/40 text-white border-white/10 placeholder-white/40' : 'bg-gray-100 text-gray-800 border-gray-300 placeholder-gray-500/40'} rounded-md px-3 py-1.5 sm:px-4 sm:py-2 border text-sm sm:text-base`}
-                                defaultValue={user?.email || ''}
-                                readOnly
-                            />
+                           
+                           
                             <button 
                                 onClick={handleLogout} 
                                 className="w-full mt-2 py-1.5 sm:py-2 px-4 rounded-md bg-gray-600 hover:bg-gray-700 text-white transition-colors text-sm sm:text-base flex items-center justify-center gap-2"

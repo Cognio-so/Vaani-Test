@@ -214,7 +214,6 @@ const CustomAgentPage = () => {
     };
 
     const runWorkflow = () => {
-        console.log("Running workflow", { nodes, connections });
         alert("Workflow started!");
     };
 

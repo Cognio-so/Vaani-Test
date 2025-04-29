@@ -6,17 +6,14 @@ const AuthContext = createContext();
 const API_URL = import.meta.env.VITE_BACKEND_URL
 
 export const AuthProvider = ({ children }) => {
-  // Initialize user from sessionStorage if available
-  const [user, setUser] = useState(() => {
-    const savedUser = sessionStorage.getItem('user');
-    return savedUser ? JSON.parse(savedUser) : null;
-  });
-  const [loading, setLoading] = useState(!sessionStorage.getItem('user'));
+  // Initialize user state without sessionStorage
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   const fetchWithCredentials = async (endpoint, options = {}) => {
     // Get token from localStorage as fallback
-    const token = localStorage.getItem('jwt_token');
+    const token = localStorage.getItem('access_token');
     
     const defaultOptions = {
       credentials: 'include',
@@ -29,29 +26,78 @@ export const AuthProvider = ({ children }) => {
       ...options
     };
 
-    console.log(`Making request to: ${API_URL}${endpoint}`);
-    console.log('Request options:', defaultOptions);
     
     try {
       const response = await fetch(`${API_URL}${endpoint}`, defaultOptions);
       
-      // Log cookie information (for debugging only, remove in production)
-      console.log('Cookies sent with request:', document.cookie);
+    
       
       if (!response.ok) {
         const data = await response.text();
         console.error('Response error:', response.status, data);
+        
+        // Handle expired access token (attempt token refresh)
         if (response.status === 401) {
-          console.log('Unauthorized - clearing user state');
+          const refreshed = await refreshAccessToken();
+          if (refreshed) {
+            // Retry the original request with new access token
+            const retryOptions = {
+              ...defaultOptions,
+              headers: {
+                ...defaultOptions.headers,
+                'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+              }
+            };
+            const retryResponse = await fetch(`${API_URL}${endpoint}`, retryOptions);
+            if (retryResponse.ok) {
+              return retryResponse;
+            }
+          }
+          
+          // If refresh failed or retry failed, clear user state
           setUser(null);
-          localStorage.removeItem('jwt_token');
+          localStorage.removeItem('access_token');
+          localStorage.removeItem('refresh_token');
         }
+        
         throw new Error(`HTTP error! status: ${response.status}`);
       }
+      
       return response;
     } catch (error) {
       console.error('Fetch error:', error);
       throw error;
+    }
+  };
+  
+  // New function to refresh access token
+  const refreshAccessToken = async () => {
+    try {
+      // Direct fetch to avoid recursion with fetchWithCredentials
+      const response = await fetch(`${API_URL}/auth/refresh-token`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        return false;
+      }
+      
+      const data = await response.json();
+      
+      // Save new access token to localStorage
+      if (data.token) {
+        localStorage.setItem('access_token', data.token);
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Token refresh error:', error);
+      return false;
     }
   };
 
@@ -64,25 +110,31 @@ export const AuthProvider = ({ children }) => {
         // Check if we're returning from Google auth
         const urlParams = new URLSearchParams(window.location.search);
         const googleAuth = urlParams.get('auth') === 'google';
-        const googleAuthInProgress = sessionStorage.getItem('googleAuthInProgress');
+        const googleAuthInProgress = localStorage.getItem('googleAuthInProgress');
         
         if (googleAuth) {
           ignoreRedirects = true;
           // Clear the Google auth in progress flag
-          sessionStorage.removeItem('googleAuthInProgress');
+          localStorage.removeItem('googleAuthInProgress');
           
           // Immediately clear URL parameters to prevent refresh issues
           window.history.replaceState({}, document.title, window.location.pathname);
           
           // If we have URL user data, use it immediately
           const urlUser = urlParams.get('user');
+          const urlToken = urlParams.get('token');
+          
           if (urlUser) {
             try {
               const userData = JSON.parse(decodeURIComponent(urlUser));
               if (isMounted) {
                 setUser(userData);
                 setLoading(false);
-                sessionStorage.setItem('user', JSON.stringify(userData));
+                
+                // Save token to localStorage if available
+                if (urlToken) {
+                  localStorage.setItem('access_token', urlToken);
+                }
               }
               return; // Skip further verification
             } catch (e) {
@@ -103,13 +155,9 @@ export const AuthProvider = ({ children }) => {
         const response = await fetchWithCredentials('/auth/check-auth');
         const data = await response.json();
         
-        
         if (isMounted) {
           setUser(data);
           setLoading(false);
-          
-          // IMPORTANT: Store user in sessionStorage as a backup
-          sessionStorage.setItem('user', JSON.stringify(data));
         }
         
         // Only handle redirects if not ignoring them
@@ -125,8 +173,6 @@ export const AuthProvider = ({ children }) => {
         if (isMounted) {
           setUser(null);
           setLoading(false);
-          // Clear backup user data
-          sessionStorage.removeItem('user');
         }
         
         // Only redirect if not ignoring redirects and not on non-auth paths
@@ -167,7 +213,7 @@ export const AuthProvider = ({ children }) => {
       const data = await response.json();
       // Store token in localStorage if returned by backend
       if (data.token) {
-        localStorage.setItem('jwt_token', data.token);
+        localStorage.setItem('access_token', data.token);
       }
       
       setUser({
@@ -190,6 +236,11 @@ export const AuthProvider = ({ children }) => {
       });
       
       const data = await response.json();
+      // Store token in localStorage if returned by backend
+      if (data.token) {
+        localStorage.setItem('access_token', data.token);
+      }
+      
       setUser(data);
       navigate("/chat");
       return data;
@@ -200,11 +251,36 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      await fetchWithCredentials('/auth/logout', { method: 'POST' });
+      // Get the access token
+      const token = localStorage.getItem('access_token');
+      
+      // Only make the logout request if we have a token
+      if (token) {
+        await fetchWithCredentials('/auth/logout', { 
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+      }
+      
+      // Clear user state and storage regardless of request success
       setUser(null);
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      
+      // Clear any other stored user data
+      localStorage.removeItem('intendedPath');
+      localStorage.removeItem('googleAuthInProgress');
+      
+      // Navigate to login
       navigate("/login");
     } catch (error) {
       console.error("Logout failed:", error);
+      // Still clear everything even if the request fails
+      setUser(null);
+      localStorage.clear();
+      navigate("/login");
     }
   };
   
@@ -215,12 +291,15 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('intendedPath', currentPath === '/login' ? '/chat' : currentPath);
       
       // Set auth flow flag
-      sessionStorage.setItem('googleAuthInProgress', 'true');      
-      // Add timestamp to prevent caching issues
-      const timestamp = new Date().getTime();
-      const googleAuthUrl = `${API_URL}/auth/google?t=${timestamp}`;
+      localStorage.setItem('googleAuthInProgress', 'true');
       
-      // Use window.location.href for consistent behavior across platforms
+      // Remove approval_prompt and just use prompt
+      const timestamp = new Date().getTime();
+      const googleAuthUrl = `${API_URL}/auth/google?` +
+        `t=${timestamp}&` +
+        `prompt=consent+select_account`;
+      
+      // Use window.location.href for consistent behavior
       window.location.href = googleAuthUrl;
     } catch (error) {
       console.error('Google sign-in error:', error);
@@ -228,28 +307,28 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Add this function to handle Google auth callback
+  // Update the Google auth callback handler
   const handleGoogleAuthCallback = async () => {
     const urlParams = new URLSearchParams(window.location.search);
     const authType = urlParams.get('auth');
     const userInfo = urlParams.get('user');
-    const token = urlParams.get('token'); // Get token from URL params
+    const token = urlParams.get('token');
 
-    if (authType === 'google' && userInfo) {
+    if (authType === 'google' && userInfo && token) {
       try {
         const userData = JSON.parse(decodeURIComponent(userInfo));
+        
+        // Store token
+        localStorage.setItem('access_token', token);
+        
+        // Set user state
         setUser(userData);
         
-        // Store token if available
-        if (token) {
-          localStorage.setItem('jwt_token', token);
-        }
+        // Clear auth flow flags
+        localStorage.removeItem('googleAuthInProgress');
         
-        // Clean up URL
-        window.history.replaceState({}, document.title, '/chat');
-        
-        // Clear auth flow flag
-        sessionStorage.removeItem('googleAuthInProgress');
+        // Navigate to chat page after successful auth
+        navigate('/chat');
         
         return true;
       } catch (error) {
@@ -271,6 +350,7 @@ export const AuthProvider = ({ children }) => {
         checkAuthStatus,
         signInWithGoogle,
         handleGoogleAuthCallback,
+        refreshAccessToken
       }}
     >
       {children}

@@ -15,7 +15,15 @@ const chatRoutes = require("./routes/chatRoutes");
 const app = express();
 
 // Validate critical environment variables
-const requiredEnvVars = ["JWT_SECRET", "GEMINI_API_KEY", "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET"];
+const requiredEnvVars = [
+  "JWT_SECRET",
+  "GEMINI_API_KEY",
+  "GOOGLE_CLIENT_ID",
+  "GOOGLE_CLIENT_SECRET",
+  "UPSTASH_REDIS_REST_URL",
+  "UPSTASH_REDIS_REST_TOKEN"
+];
+
 requiredEnvVars.forEach((varName) => {
   if (!process.env[varName]) {
     console.error(`Error: Environment variable ${varName} is not set`);

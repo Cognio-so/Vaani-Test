@@ -83,8 +83,9 @@ const ChatHistory = ({ isOpen, onClose, conversations, onSelectConversation }) =
 
                         return {
                             title: categoryName,
-                            items: categoryChats.map(chat => ({
+                            items: categoryChats.map((chat, chatIndex) => ({
                                 id: chat.id,
+                                reactKey: `history_${chat.id}_${chatIndex}_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
                                 title: chat.title || 'Untitled Chat',
                                 time: formatTime(chat.lastUpdated),
                                 preview: chat.preview,
@@ -294,66 +295,69 @@ const ChatHistory = ({ isOpen, onClose, conversations, onSelectConversation }) =
                                         No chats found.
                                     </div>
                                 ) : (
-                                    Object.entries(displayData).map(([key, section]) => (
-                                        <div key={key} className="mb-4">
-                                            <div className="px-4 py-2 text-[#cc2b5e] text-sm">
-                                                {section.title}
-                                            </div>
-                                            {section.items.map((item) => (
-                                                <motion.div
-                                                    key={item.id}
-                                                    whileHover={{
-                                                        backgroundColor: theme === 'dark'
-                                                            ? 'rgba(255, 255, 255, 0.1)'
-                                                            : 'rgba(0, 0, 0, 0.05)'
-                                                    }}
-                                                    className="px-4 py-2 cursor-pointer relative group"
-                                                    onClick={() => handleChatSelection(item.id)}
-                                                >
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="flex items-center flex-1">
-                                                            {item.isAction ? (
-                                                                <RiAddLine className="mr-2 text-[#cc2b5e]" />
-                                                            ) : null}
-                                                            <div className={`${
-                                                                theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
-                                                            } text-sm truncate`}>
-                                                                {item.title || "Untitled Chat"}
+                                    Object.entries(displayData).map(([sectionKey, section]) => (
+                                        <div key={`section_${sectionKey}_${Date.now()}`} className="mb-6">
+                                            <h3 className={`text-sm font-medium mb-2 ${
+                                                theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                                            }`}>{section.title}</h3>
+                                            
+                                            <div className="space-y-2">
+                                                {section.items.map((item) => (
+                                                    <motion.div
+                                                        key={item.reactKey || `item_${item.id}_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`}
+                                                        whileHover={{
+                                                            backgroundColor: theme === 'dark'
+                                                                ? 'rgba(255, 255, 255, 0.1)'
+                                                                : 'rgba(0, 0, 0, 0.05)'
+                                                        }}
+                                                        className="px-4 py-2 cursor-pointer relative group"
+                                                        onClick={() => handleChatSelection(item.id)}
+                                                    >
+                                                        <div className="flex items-center justify-between">
+                                                            <div className="flex items-center flex-1">
+                                                                {item.isAction ? (
+                                                                    <RiAddLine className="mr-2 text-[#cc2b5e]" />
+                                                                ) : null}
+                                                                <div className={`${
+                                                                    theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                                                                } text-sm truncate`}>
+                                                                    {item.title || "Untitled Chat"}
+                                                                </div>
                                                             </div>
+                                                            
+                                                            {!item.isAction && (
+                                                                <button 
+                                                                    className={`opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-full ${
+                                                                        theme === 'dark' ? 'hover:bg-gray-800' : 'hover:bg-gray-200'
+                                                                    }`}
+                                                                    onClick={(e) => deleteChat(item.id, e)}
+                                                                >
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-red-500" viewBox="0 0 20 20" fill="currentColor">
+                                                                        <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                                                                    </svg>
+                                                                </button>
+                                                            )}
                                                         </div>
                                                         
                                                         {!item.isAction && (
-                                                            <button 
-                                                                className={`opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-full ${
-                                                                    theme === 'dark' ? 'hover:bg-gray-800' : 'hover:bg-gray-200'
-                                                                }`}
-                                                                onClick={(e) => deleteChat(item.id, e)}
-                                                            >
-                                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-red-500" viewBox="0 0 20 20" fill="currentColor">
-                                                                    <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-                                                                </svg>
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                    
-                                                    {!item.isAction && (
-                                                        <>
-                                                            <div className={`${
-                                                                theme === 'dark' ? 'text-gray-500' : 'text-gray-500'
-                                                            } text-xs mt-1`}>
-                                                                {item.time || " GuilUnknown time"}
-                                                            </div>
-                                                            {item.preview !== undefined && (
+                                                            <>
                                                                 <div className={`${
-                                                                    theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-                                                                } text-xs mt-1 line-clamp-1`}>
-                                                                    {formatPreview(item.preview)}
+                                                                    theme === 'dark' ? 'text-gray-500' : 'text-gray-500'
+                                                                } text-xs mt-1`}>
+                                                                    {item.time || " GuilUnknown time"}
                                                                 </div>
-                                                            )}
-                                                        </>
-                                                    )}
-                                                </motion.div>
-                                            ))}
+                                                                {item.preview !== undefined && (
+                                                                    <div className={`${
+                                                                        theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                                                                    } text-xs mt-1 line-clamp-1`}>
+                                                                        {formatPreview(item.preview)}
+                                                                    </div>
+                                                                )}
+                                                            </>
+                                                        )}
+                                                    </motion.div>
+                                                ))}
+                                            </div>
                                         </div>
                                     ))
                                 )}

@@ -166,7 +166,7 @@ const SourcesDropdown = ({ sources }) => {
                 
                 return (
                   <a 
-                    key={index}
+                    key={`source_${source.url}_${index}`}
                     href={source.url}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -200,7 +200,15 @@ const SourcesDropdown = ({ sources }) => {
   );
 };
 
-const MessageContent = ({ content, onMediaLoaded, forceImageDisplay, forceAudioDisplay, isStreaming, agentStatus }) => {
+const MessageContent = ({ 
+    content, 
+    onMediaLoaded, 
+    forceImageDisplay, 
+    forceAudioDisplay, 
+    isStreaming, 
+    agentStatus,
+    messageId = Date.now().toString() // Default value for backward compatibility
+}) => {
   const { theme } = useContext(ThemeContext);
   // Extract media first
   const { text, imageUrls, musicUrls } = extractMediaUrls(content);
@@ -288,7 +296,7 @@ const MessageContent = ({ content, onMediaLoaded, forceImageDisplay, forceAudioD
                 };
 
                 return !inline && match ? (
-                  <div className="code-block">
+                  <div key={`code_${messageId}_${Math.random().toString(36).substring(2, 9)}`} className="code-block">
                     <div className="code-header">
                       <span className="code-lang">{match[1]}</span>
                       <button 
@@ -367,7 +375,7 @@ const MessageContent = ({ content, onMediaLoaded, forceImageDisplay, forceAudioD
       {imageUrls.length > 0 && (
         <div className="mt-2 space-y-2">
           {imageUrls.map((url, index) => (
-            <div key={index} className="relative group">
+            <div key={`img_${messageId}_${index}_${Math.random().toString(36).substring(2, 9)}`} className="relative group">
               <img
                 src={url}
                 alt={`Image ${index + 1}`}
@@ -394,7 +402,9 @@ const MessageContent = ({ content, onMediaLoaded, forceImageDisplay, forceAudioD
       {musicUrls.length > 0 && (
         <div className="mt-3 space-y-4">
           {musicUrls.map((url, index) => (
-            <ModernAudioPlayer key={index} url={url} onMediaLoaded={onMediaLoaded} />
+            <div key={`audio_${messageId}_${index}_${Math.random().toString(36).substring(2, 9)}`} className="mt-4 first:mt-2">
+              <ModernAudioPlayer url={url} onMediaLoaded={onMediaLoaded} />
+            </div>
           ))}
         </div>
       )}

@@ -9,9 +9,32 @@ import { useAuth } from '../context/AuthContext'
 import { ThemeContext } from '../App'
 import MessageContent, { sanitizeContent } from './MessageContentDisplay'
 import { MediaLoadingAnimation } from './MediaComponents'
-
+import { FaMoon } from 'react-icons/fa'
+import { HiSun } from 'react-icons/hi'
 const API_URL = import.meta.env.VITE_API_URL;
 const backend_url = import.meta.env.VITE_BACKEND_URL;
+
+const usedKeys = new Set();
+
+function generateUniqueKey(prefix = 'key') {
+  let key;
+  do {
+    key = `${prefix}_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+  } while (usedKeys.has(key));
+  
+  // Add the key to the set
+  usedKeys.add(key);
+  
+  // Clean up old keys occasionally to prevent memory leaks
+  if (usedKeys.size > 1000) {
+    // Keep only the 500 most recent keys
+    const keysArray = Array.from(usedKeys);
+    const keysToRemove = keysArray.slice(0, keysArray.length - 500);
+    keysToRemove.forEach(k => usedKeys.delete(k));
+  }
+  
+  return key;
+}
 
 const ChatContainer = () => {
     // --- State ---
@@ -28,7 +51,7 @@ const ChatContainer = () => {
     const { user } = useAuth();
     const [chatTitle, setChatTitle] = useState("New Chat");
     const [conversations, setConversations] = useState([]);
-    const { theme } = useContext(ThemeContext);
+    const { theme, setTheme } = useContext(ThemeContext);
     const [isLoadingChat, setIsLoadingChat] = useState(false);
     const [model, setModel] = useState("gemini-1.5-flash");
     const [useAgent, setUseAgent] = useState(false);
@@ -44,49 +67,45 @@ const ChatContainer = () => {
 
     // ScrollToBottom (Ensure reliable scroll target)
     const scrollToBottom = useCallback(() => {
-        if (scrollToBottom.isScrolling) return;
-        scrollToBottom.isScrolling = true;
+        try {
+            const chatContainer = document.querySelector('.chat-messages-container');
+            if (!chatContainer) return;
 
-        requestAnimationFrame(() => {
-            if (messagesEndRef.current) {
-                const scrollContainer = messagesEndRef.current.closest('.overflow-y-auto');
-                if (scrollContainer) {
-                    scrollContainer.scrollTop = scrollContainer.scrollHeight;
-                }
-                messagesEndRef.current.scrollIntoView({
-                    behavior: 'auto',
-                    block: 'end',
-                });
-            }
+            // Use requestAnimationFrame for smooth scrolling
+            requestAnimationFrame(() => {
+                const scrollHeight = chatContainer.scrollHeight;
+                const currentScroll = chatContainer.scrollTop;
+                const clientHeight = chatContainer.clientHeight;
+                const isNearBottom = scrollHeight - currentScroll - clientHeight < 100;
 
-            setTimeout(() => {
-                if (messagesEndRef.current) {
-                    const scrollContainer = messagesEndRef.current.closest('.overflow-y-auto');
-                    if (scrollContainer) {
-                        if (scrollContainer.scrollHeight > scrollContainer.clientHeight) {
-                            scrollContainer.scrollTop = scrollContainer.scrollHeight;
-                        }
-                    }
+                // Only auto-scroll if user is already near bottom or it's a new message
+                if (isNearBottom || messages[messages.length - 1]?.role === 'user') {
+                    chatContainer.scrollTo({
+                        top: scrollHeight,
+                        behavior: 'smooth'
+                    });
                 }
-                scrollToBottom.isScrolling = false;
-            }, 150);
-        });
-    }, []);
+            });
+        } catch (error) {
+            console.error("Scroll error:", error);
+        }
+    }, [messages]);
 
     // Scroll Effect
     useEffect(() => {
         if (!isLoadingChat && messages.length > 0) {
-            const lastMessage = messages[messages.length - 1];
-            const shouldScroll = !(lastMessage?.isTemporary && isLoading);
-
-            if (shouldScroll) {
-                const delay = lastMessage?.role === 'user' ? 50 : 150;
-                const scrollTimer = setTimeout(scrollToBottom, delay);
-                return () => clearTimeout(scrollTimer);
-            }
+            const timer = setTimeout(scrollToBottom, 100);
+            return () => clearTimeout(timer);
         }
-    }, [messages, scrollToBottom, isLoadingChat, isLoading]);
+    }, [messages, isLoadingChat, scrollToBottom]);
 
+    // Add scroll effect for streaming responses
+    useEffect(() => {
+        if (isLoading) {
+            const scrollInterval = setInterval(scrollToBottom, 500);
+            return () => clearInterval(scrollInterval);
+        }
+    }, [isLoading, scrollToBottom]);
 
     // Fetch History Effect
     const fetchChatHistory = useCallback(async () => {
@@ -207,7 +226,7 @@ const ChatContainer = () => {
     const handleReactAgentStreamingRequest = useCallback(async (userMessage, options) => {
         setIsLoading(true);
         setAgentStatus("Initializing research agent...");
-        const tempMessageId = `temp_assistant_${Date.now()}`;
+        const tempMessageId = `temp_assistant_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         let finalThreadId = threadId || chatIdRef.current;
         let accumulatedContent = "";
 
@@ -326,7 +345,7 @@ const ChatContainer = () => {
             setAgentStatus("Initializing...");
         }
         
-        const tempMessageId = `temp_assistant_${Date.now()}`;
+        const tempMessageId = `temp_assistant_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         let finalThreadId = threadId || chatIdRef.current;
 
         if (!isMedia) {
@@ -649,6 +668,11 @@ const ChatContainer = () => {
 
     const hasActiveConversation = messages.length > 0;
 
+    const toggleTheme = () => {
+        const newTheme = theme === 'dark' ? 'light' : 'dark';
+        setTheme(newTheme);
+    };
+
     // --- JSX Structure ---
     return (
         <div className={`flex flex-col h-[100dvh] w-full overflow-hidden ${theme === 'dark' ? 'bg-black' : 'bg-white'}`}>
@@ -668,6 +692,21 @@ const ChatContainer = () => {
                         </div>
                     </div>
                     <div className="absolute top-4 right-4 sm:right-6 z-30 flex items-center">
+                        <button
+                            onClick={toggleTheme}
+                            className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center mr-3 transition-colors duration-300 ${
+                                theme === 'dark' 
+                                    ? 'bg-gray-800 text-yellow-300 hover:bg-gray-700' 
+                                    : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+                            }`}
+                            aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+                        >
+                            {theme === 'dark' ? (
+                                <HiSun  className="w-4 h-4 sm:w-5 sm:h-5" />
+                            ) : (
+                                <FaMoon className="w-4 h-4 sm:w-5 sm:h-5" />
+                            )}
+                        </button>
                         <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden border-2 border-pink-500/50">
                             <img src={user?.profilePicture || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23cc2b5e'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/%3E%3C/svg%3E"} alt={user?.name || "Profile"} className="w-full h-full object-cover" onError={(e) => { e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23cc2b5e'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/%3E%3C/svg%3E"; }} />
                         </div>
@@ -689,7 +728,10 @@ const ChatContainer = () => {
                                         const isStreaming = isLastMessage && (msg.isTemporary || msg.isLoading) && isLoading && !isGeneratingMedia;
 
                                         return (
-                                            <div key={msg.id || `msg-${index}`} className={`mb-4 w-full flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                            <div 
+                                                key={generateUniqueKey(`message_${index}`)}
+                                                className={`mb-4 w-full flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                                            >
                                                 {msg.role === 'user' ? (
                                                     <div className={`${theme === 'dark' ? 'bg-gray-500 text-white' : 'bg-gray-300 text-black'}  rounded-2xl p-3 px-4 max-w-[85%] break-words shadow-sm backdrop-blur-sm`}>
                                                         <MessageContent content={displayContent} />
@@ -703,6 +745,7 @@ const ChatContainer = () => {
                                                             onMediaLoaded={isLastMessage && isGeneratingMedia ? handleMediaLoaded : undefined}
                                                             isStreaming={isStreaming}
                                                             agentStatus={isLastMessage ? msg.agentStatus : undefined}
+                                                            messageId={generateUniqueKey(`msg_${index}`)}
                                                         />
                                                     </div>
                                                 )}
