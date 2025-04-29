@@ -8,6 +8,7 @@ import HomePage from './pages/Homepage'
 import CustomAgentPage from './pages/CustomAgentPage'
 import LoadingSpinner from './components/LoadingSpinner'
 import { AuthProvider, useAuth } from './context/AuthContext'
+import AuthCallback from './pages/AuthCallback'
 
 // Create Theme Context
 export const ThemeContext = createContext();
@@ -77,6 +78,7 @@ function AppRoutes() {
       } />
       <Route path='/signup' element={<SignupPage />} />
       <Route path='/login' element={<LoginPage />} />
+      <Route path='/auth-callback' element={<AuthCallback />} />
       <Route path='/custom-agent' element={
         <ProtectedRoute>
           <CustomAgentPage />

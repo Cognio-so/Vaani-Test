@@ -237,6 +237,11 @@ const googleCallback = async (req, res, next) => {
         console.error('Session creation error:', error);
       }
 
+      // User agent detection for browser-specific handling
+      const userAgent = req.headers['user-agent'] || '';
+      const isSafari = userAgent.includes('Safari') && !userAgent.includes('Chrome');
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+      
       // Enhanced error handling for user info
       const userInfo = encodeURIComponent(JSON.stringify({
         _id: userObj.user._id,
@@ -246,13 +251,17 @@ const googleCallback = async (req, res, next) => {
         token: accessToken
       }));
       
-      // IMPORTANT: Redirect directly to chat page instead of login page
-      res.redirect(
-        `${process.env.FRONTEND_URL}/chat?` +
-        `auth=google&` +
-        `user=${userInfo}&` +
-        `token=${accessToken}`
-      );
+      // Browser-specific URL parameters
+      const timestamp = Date.now();
+      let redirectUrl = `${process.env.FRONTEND_URL}/chat?auth=google&user=${userInfo}&token=${accessToken}&t=${timestamp}`;
+      
+      // Special handling for Safari and mobile browsers
+      if (isSafari || isMobile) {
+        // Use a simpler URL for Safari (which has stricter URL length limits)
+        redirectUrl = `${process.env.FRONTEND_URL}/auth-callback?token=${accessToken}&t=${timestamp}`;
+      }
+      
+      res.redirect(redirectUrl);
     } catch (error) {
       console.error('Google auth callback error:', error);
       res.redirect(`${process.env.FRONTEND_URL}/login?error=auth_failed`);
