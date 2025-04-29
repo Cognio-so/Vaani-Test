@@ -3,7 +3,6 @@ import MessageInput from './MessageInput'
 import Sidebar from './Sidebar'
 import ChatHistory from './ChatHistory'
 import Settings from './Settings'
-import axios from 'axios'
 import React, { useState, useEffect, useRef, useContext, useCallback } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { ThemeContext } from '../App'
@@ -11,6 +10,8 @@ import MessageContent, { sanitizeContent } from './MessageContentDisplay'
 import { MediaLoadingAnimation } from './MediaComponents'
 import { FaMoon } from 'react-icons/fa'
 import { HiSun } from 'react-icons/hi'
+import api from '../utils/api'
+
 const API_URL = import.meta.env.VITE_API_URL;
 const backend_url = import.meta.env.VITE_BACKEND_URL;
 
@@ -111,7 +112,7 @@ const ChatContainer = () => {
     const fetchChatHistory = useCallback(async () => {
         if (!user) return;
         try {
-            const response = await axios.get(`${backend_url}/api/chat/history/all`, { withCredentials: true });
+            const response = await api.get('/api/chat/history/all');
             if (response.data.success) {
                 const allChats = [
                     ...response.data.categories.today, ...response.data.categories.yesterday,
@@ -121,7 +122,7 @@ const ChatContainer = () => {
                 setConversations(allChats);
             }
         } catch (error) { console.error("Error fetching chat history:", error); }
-    }, [user, backend_url]);
+    }, [user]);
 
     useEffect(() => {
         fetchChatHistory();
@@ -164,9 +165,9 @@ const ChatContainer = () => {
             const payload = { title, messages: cleanMessages };
             let response;
             if (isExistingChat) {
-                response = await axios.put(`${backend_url}/api/chat/${finalThreadId}/update`, { ...payload, preserveTimestamp: !!preserveTimestamp }, { withCredentials: true });
+                response = await api.put(`/api/chat/${finalThreadId}/update`, { ...payload, preserveTimestamp: !!preserveTimestamp });
             } else {
-                response = await axios.post(`${backend_url}/api/chat/save`, { chatId: finalThreadId, ...payload }, { withCredentials: true });
+                response = await api.post('/api/chat/save', { chatId: finalThreadId, ...payload });
             }
             if (response.data.success) {
                 const savedChat = response.data.chat;
@@ -177,7 +178,7 @@ const ChatContainer = () => {
             } else { console.error("Error saving chat (API):", response.data); }
         } catch (error) { console.error("Error saving chat (Network):", error.response?.data || error.message); }
         finally { saveInProgress.current = false; }
-    }, [user, messages, chatTitle, threadId, isLoadingChat, backend_url, fetchChatHistory]);
+    }, [user, messages, chatTitle, threadId, isLoadingChat, fetchChatHistory]);
 
     // Debounced Save Effect
     useEffect(() => {
@@ -561,7 +562,7 @@ const ChatContainer = () => {
         setIsGeneratingMedia(false);
 
         try {
-            const response = await axios.get(`${backend_url}/api/chat/${chatIdToLoad}`, { withCredentials: true });
+            const response = await api.get(`/api/chat/${chatIdToLoad}`);
             if (response.data.success) {
                 const chatData = response.data.chat;
                 const loadedMessages = (chatData.messages || []).map(msg => ({
@@ -589,7 +590,7 @@ const ChatContainer = () => {
         } finally {
             setIsLoadingChat(false);
         }
-    }, [backend_url, scrollToBottom, isLoadingChat]);
+    }, [scrollToBottom, isLoadingChat]);
 
 
     const clearConversation = useCallback(() => {
@@ -615,10 +616,9 @@ const ChatContainer = () => {
         try {
             const currentMessagesToSave = messages.map(msg => ({ role: msg.role, content: msg.content }));
 
-            const response = await axios.put(
-                `${backend_url}/api/chat/${threadId}/update`,
-                { title: newTitle.trim(), messages: currentMessagesToSave },
-                { withCredentials: true }
+            const response = await api.put(
+                `/api/chat/${threadId}/update`,
+                { title: newTitle.trim(), messages: currentMessagesToSave }
             );
 
             if (response.data.success) {
@@ -632,7 +632,7 @@ const ChatContainer = () => {
             setChatTitle(oldTitle);
             console.error("Update Title Error (Network):", error.response?.data || error.message);
         }
-    }, [user, threadId, isLoadingChat, chatTitle, messages, backend_url, fetchChatHistory]);
+    }, [user, threadId, isLoadingChat, chatTitle, messages, fetchChatHistory]);
 
 
     const handleModelChange = useCallback((newModel) => { setModel(newModel); }, []);

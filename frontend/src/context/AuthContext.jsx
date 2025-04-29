@@ -1,64 +1,10 @@
 import { createContext, useState, useContext, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from 'axios';
+import api from "../utils/api";
 
 const AuthContext = createContext();
 
-const API_URL = import.meta.env.VITE_BACKEND_URL
-
-const API = axios.create({
-  baseURL: API_URL || 'https://vanni-test-backend.vercel.app',
-  withCredentials: true
-});
-
-// Add request interceptor to include token in all requests
-API.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('accessToken');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
-// Add response interceptor to handle token refresh
-API.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    const originalRequest = error.config;
-    
-    // If error is 401 and we haven't tried to refresh token yet
-    if (error.response.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-      
-      try {
-        // Try to refresh the token
-        const refreshResponse = await axios.post(
-          `${API_URL || 'https://vanni-test-backend.vercel.app'}/auth/refresh-token`, 
-          {}, 
-          { withCredentials: true }
-        );
-        
-        if (refreshResponse.data && refreshResponse.data.token) {
-          // Store the new token
-          localStorage.setItem('accessToken', refreshResponse.data.token);
-          
-          // Update the original request with the new token
-          originalRequest.headers.Authorization = `Bearer ${refreshResponse.data.token}`;
-          return API(originalRequest);
-        }
-      } catch (refreshError) {
-        // If refresh fails, redirect to login
-        window.location.href = '/login';
-        return Promise.reject(refreshError);
-      }
-    }
-    
-    return Promise.reject(error);
-  }
-);
+const API_URL = import.meta.env.VITE_BACKEND_URL;
 
 export const AuthProvider = ({ children }) => {
   // Initialize user state without sessionStorage
@@ -66,90 +12,17 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  const fetchWithCredentials = async (endpoint, options = {}) => {
-    // Get token from localStorage as fallback
-    const token = localStorage.getItem('access_token');
-    
-    const defaultOptions = {
-      credentials: 'include',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        // Add Authorization header as fallback if token exists
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-      },
-      ...options
-    };
-
-    
-    try {
-      const response = await fetch(`${API_URL}${endpoint}`, defaultOptions);
-      
-    
-      
-      if (!response.ok) {
-        const data = await response.text();
-        console.error('Response error:', response.status, data);
-        
-        // Handle expired access token (attempt token refresh)
-        if (response.status === 401) {
-          const refreshed = await refreshAccessToken();
-          if (refreshed) {
-            // Retry the original request with new access token
-            const retryOptions = {
-              ...defaultOptions,
-              headers: {
-                ...defaultOptions.headers,
-                'Authorization': `Bearer ${localStorage.getItem('access_token')}`
-              }
-            };
-            const retryResponse = await fetch(`${API_URL}${endpoint}`, retryOptions);
-            if (retryResponse.ok) {
-              return retryResponse;
-            }
-          }
-          
-          // If refresh failed or retry failed, clear user state
-          setUser(null);
-          localStorage.removeItem('access_token');
-          localStorage.removeItem('refresh_token');
-        }
-        
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      return response;
-    } catch (error) {
-      console.error('Fetch error:', error);
-      throw error;
-    }
-  };
-  
   // New function to refresh access token
   const refreshAccessToken = async () => {
     try {
-      // Direct fetch to avoid recursion with fetchWithCredentials
-      const response = await fetch(`${API_URL}/auth/refresh-token`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        }
-      });
+      // Direct axios call to avoid recursion with api interceptors
+      const response = await api.post('/auth/refresh-token');
       
-      if (!response.ok) {
-        return false;
+      if (response.data.token) {
+        localStorage.setItem('access_token', response.data.token);
+        return true;
       }
-      
-      const data = await response.json();
-      
-      // Save new access token to localStorage
-      if (data.token) {
-        localStorage.setItem('access_token', data.token);
-      }
-      
-      return true;
+      return false;
     } catch (error) {
       console.error('Token refresh error:', error);
       return false;
@@ -158,7 +31,6 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     let isMounted = true;
-    let ignoreRedirects = false;
     
     const verifyUser = async () => {
       try {
@@ -205,9 +77,20 @@ export const AuthProvider = ({ children }) => {
 
         // Only perform token verification if no Google auth data
         if (!googleAuth) {
-          const response = await fetchWithCredentials('/auth/check-auth');
-          const data = await response.json();
-          setUser(data);
+          try {
+            const response = await api.get('/auth/check-auth');
+            setUser(response.data);
+          } catch (error) {
+            // Handle error - but don't need special 401 handling as api utility does that
+            console.error("Auth check failed:", error);
+            setUser(null);
+            
+            // Only redirect if not on non-auth paths
+            const nonAuthPaths = ['/login', '/signup', '/'];
+            if (!nonAuthPaths.includes(window.location.pathname)) {
+              navigate('/login');
+            }
+          }
         }
         
         setLoading(false);
@@ -236,21 +119,20 @@ export const AuthProvider = ({ children }) => {
     const authParam = params.get('auth');
     const userParam = params.get('user');
     const tokenParam = params.get('token');
+    const authSuccess = params.get('authSuccess');
     
-    if (authParam === 'google' && userParam && tokenParam) {
+    if (authParam === 'google' && userParam && tokenParam && authSuccess) {
       try {
         const userData = JSON.parse(decodeURIComponent(userParam));
         
-        // Store token in localStorage for API requests
-        localStorage.setItem('accessToken', tokenParam);
+        // Store token in localStorage
+        localStorage.setItem('access_token', tokenParam);
         
         // Update state with user info
         setUser(userData);
         
-        // Clean up URL params
+        // Clear URL params
         window.history.replaceState({}, document.title, '/chat');
-        
-        console.log('Successfully processed Google auth callback');
       } catch (error) {
         console.error('Error processing auth callback:', error);
       }
@@ -259,9 +141,8 @@ export const AuthProvider = ({ children }) => {
 
   const checkAuthStatus = async () => {
     try {
-      const response = await fetchWithCredentials('/auth/check-auth');
-      const data = await response.json();
-      setUser(data);
+      const response = await api.get('/auth/check-auth');
+      setUser(response.data);
     } catch (error) {
       console.error("Auth check failed:", error);
       setUser(null);
@@ -272,47 +153,39 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const response = await fetchWithCredentials('/auth/login', {
-        method: 'POST',
-        body: JSON.stringify({ email, password })
-      });
+      const response = await api.post('/auth/login', { email, password });
       
-      const data = await response.json();
       // Store token in localStorage if returned by backend
-      if (data.token) {
-        localStorage.setItem('access_token', data.token);
+      if (response.data.token) {
+        localStorage.setItem('access_token', response.data.token);
       }
       
       setUser({
-        ...data,
-        profilePicture: data.profilePicture
+        ...response.data,
+        profilePicture: response.data.profilePicture
       });
       navigate("/chat");
-      return data;
+      return response.data;
     } catch (error) {
       console.error('Login error:', error);
-      throw new Error(error.message || 'Login failed');
+      throw new Error(error.response?.data?.message || 'Login failed');
     }
   };
 
   const signup = async (name, email, password) => {
     try {
-      const response = await fetchWithCredentials('/auth/signup', {
-        method: 'POST',
-        body: JSON.stringify({ name, email, password })
-      });
+      const response = await api.post('/auth/signup', { name, email, password });
       
-      const data = await response.json();
       // Store token in localStorage if returned by backend
-      if (data.token) {
-        localStorage.setItem('access_token', data.token);
+      if (response.data.token) {
+        localStorage.setItem('access_token', response.data.token);
       }
       
-      setUser(data);
+      setUser(response.data);
       navigate("/chat");
-      return data;
+      return response.data;
     } catch (error) {
-      throw new Error(error.message || 'Signup failed');
+      throw new Error(error.response?.data?.message || 'Signup failed');
     }
   };
 
@@ -323,12 +196,7 @@ export const AuthProvider = ({ children }) => {
       
       // Only make the logout request if we have a token
       if (token) {
-        await fetchWithCredentials('/auth/logout', { 
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
+        await api.post('/auth/logout');
       }
       
       // Clear user state and storage regardless of request success

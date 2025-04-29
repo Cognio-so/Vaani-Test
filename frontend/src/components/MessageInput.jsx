@@ -5,8 +5,8 @@ import { RiSparkling2Fill } from 'react-icons/ri'
 import { MdAttachFile } from 'react-icons/md'
 import { SiGoogle, SiOpenai, SiMeta, SiClaude } from 'react-icons/si'
 import { IoClose } from 'react-icons/io5'
-import axios from 'axios'
 import { ThemeContext } from '../App'
+import api from '../utils/api'
 
 // Constants
 const API_URL = import.meta.env.VITE_API_URL
@@ -67,7 +67,7 @@ const MessageInput = ({ onSendMessage, isLoading, setIsLoading, onMediaRequested
             
             setIsLoading(true);
             try {
-                const response = await axios.post(`${API_URL}/api/upload`, formData, {
+                const response = await api.post(`/api/upload`, formData, {
                     headers: {
                         'Content-Type': 'multipart/form-data'
                     }

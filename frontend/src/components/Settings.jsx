@@ -3,9 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { RiArrowLeftLine, RiLogoutBoxLine } from 'react-icons/ri';
 import { ThemeContext } from '../App';
 import { useAuth } from '../context/AuthContext';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-
+import api from '../utils/api';
 
 const backend_url = import.meta.env.VITE_BACKEND_URL 
 
@@ -25,9 +24,7 @@ const Settings = ({ isOpen, onClose }) => {
 
     const handleLogout = async () => {
         try {
-            await axios.post(`${backend_url}/auth/logout`, {}, {
-                withCredentials: true
-            });
+            await api.post('/auth/logout');
             logout();
             onClose();
             navigate('/login');

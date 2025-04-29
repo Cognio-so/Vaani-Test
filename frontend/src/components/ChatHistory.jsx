@@ -1,11 +1,9 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RiSearchLine, RiAddLine } from 'react-icons/ri';
-import axios from 'axios';
 import { IoClose } from 'react-icons/io5';
 import { ThemeContext } from '../App';
-
-const backend_url = import.meta.env.VITE_BACKEND_URL;
+import api from '../utils/api';
 
 const ChatHistory = ({ isOpen, onClose, conversations, onSelectConversation }) => {
     const [searchQuery, setSearchQuery] = useState('');
@@ -27,10 +25,7 @@ const ChatHistory = ({ isOpen, onClose, conversations, onSelectConversation }) =
         setError(null);
 
         try {
-            const response = await axios.get(`${backend_url}/api/chat/history/all`, {
-                withCredentials: true,
-                timeout: 10000 // 10 second timeout
-            });
+            const response = await api.get('/api/chat/history/all');
 
             if (response.data.success) {
                 const formattedData = {
@@ -211,9 +206,7 @@ const ChatHistory = ({ isOpen, onClose, conversations, onSelectConversation }) =
         event.stopPropagation();
         
         try {
-            const response = await axios.delete(`${backend_url}/api/chat/${chatId}`, {
-                withCredentials: true
-            });
+            const response = await api.delete(`/api/chat/${chatId}`);
             
             if (response.data.success) {
                 fetchChatHistory(); // Refresh the list

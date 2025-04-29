@@ -4,12 +4,10 @@ import { BsCollection, BsPlusCircle} from 'react-icons/bs';
 import { FaAlignLeft , FaAlignRight } from 'react-icons/fa';
 import { GiArtificialIntelligence } from 'react-icons/gi';
 import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { useContext } from 'react';
 import { ThemeContext } from '../App';
-
-const backend_url = import.meta.env.VITE_BACKEND_URL
+import api from '../utils/api';
 
 const Sidebar = ({ isVisible, onToggle, onOpenSettings, onOpenHistory, onNewChat }) => {
     const { logout } = useAuth();
@@ -19,9 +17,7 @@ const Sidebar = ({ isVisible, onToggle, onOpenSettings, onOpenHistory, onNewChat
     // Handle logout
     const handleLogout = async () => {
         try {
-            await axios.post(`${backend_url}/auth/logout`, {}, {
-                withCredentials: true
-            });
+            await api.post('/auth/logout');
             
             // Use the logout function from auth context to clear local state
             logout();
