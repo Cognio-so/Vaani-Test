@@ -16,50 +16,21 @@ export const ThemeContext = createContext();
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
   const [localLoading, setLocalLoading] = useState(true);
-  const [hasUser, setHasUser] = useState(false);
   
   useEffect(() => {
-    const checkAuth = async () => {
-      // Check if returning from Google auth
-      const urlParams = new URLSearchParams(window.location.search);
-      const isGoogleAuth = urlParams.get('auth') === 'google';
-      
-      if (isGoogleAuth) {
-        const userInfo = urlParams.get('user');
-        const token = urlParams.get('token');
-        if (userInfo && token) {
-          try {
-            const userData = JSON.parse(decodeURIComponent(userInfo));
-            // Store token in localStorage
-            localStorage.setItem('access_token', token);
-            setHasUser(true);
-            
-            // Clear URL parameters to prevent refresh issues
-            window.history.replaceState({}, document.title, window.location.pathname);
-          } catch (error) {
-            console.error('Error parsing Google auth user data:', error);
-          }
-        }
-      } else if (user) {
-        setHasUser(true);
-      } else {
-        // Check for token instead of saved user
-        const accessToken = localStorage.getItem('access_token');
-        if (accessToken) {
-          setHasUser(true);
-        }
-      }
-      setLocalLoading(false);
-    };
-
-    checkAuth();
-  }, [user]);
+    // Only check for token, don't trigger any navigation here
+    const token = localStorage.getItem('access_token');
+    const hasToken = !!token;
+    setLocalLoading(false);
+  }, []);
 
   if (loading || localLoading) {
     return <LoadingSpinner />;
   }
 
-  if (!hasUser) {
+  // Check if the user is already defined or we have a token
+  const hasAuth = !!user || !!localStorage.getItem('access_token');
+  if (!hasAuth) {
     return <Navigate to="/login" />;
   }
 

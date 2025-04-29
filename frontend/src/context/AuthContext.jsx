@@ -34,6 +34,12 @@ export const AuthProvider = ({ children }) => {
     
     const verifyUser = async () => {
       try {
+        // Prevent verification on login and signup pages
+        if (['/login', '/signup'].includes(window.location.pathname)) {
+          setLoading(false);
+          return;
+        }
+        
         // Check if we're returning from Google auth
         const urlParams = new URLSearchParams(window.location.search);
         const googleAuth = urlParams.get('auth') === 'google';

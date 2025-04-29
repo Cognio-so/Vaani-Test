@@ -48,10 +48,8 @@ api.interceptors.response.use(
           return axios(originalRequest);
         }
       } catch (refreshError) {
-        // If refresh fails, clear token and redirect to login
+        // Only clear the token, but DON'T redirect
         localStorage.removeItem('access_token');
-        window.location.href = '/login';
-        return Promise.reject(refreshError);
       }
     }
     

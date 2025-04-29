@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import LoadingSpinner from '../components/LoadingSpinner';
+import api from '../utils/api'; // Import the API utility
 
 const AuthCallback = () => {
   const navigate = useNavigate();
@@ -18,16 +19,11 @@ const AuthCallback = () => {
           // Store token
           localStorage.setItem('access_token', token);
           
-          // Fetch user profile with token
-          const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/auth/profile`, {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
-          });
+          // Fetch user profile with token using our API utility
+          const response = await api.get('/auth/profile');
           
-          if (response.ok) {
-            const userData = await response.json();
-            setUser(userData);
+          if (response.data) {
+            setUser(response.data);
           }
           
           // Navigate to chat
