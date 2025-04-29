@@ -1,9 +1,64 @@
 import { createContext, useState, useContext, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from 'axios';
 
 const AuthContext = createContext();
 
 const API_URL = import.meta.env.VITE_BACKEND_URL
+
+const API = axios.create({
+  baseURL: API_URL || 'https://vanni-test-backend.vercel.app',
+  withCredentials: true
+});
+
+// Add request interceptor to include token in all requests
+API.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Add response interceptor to handle token refresh
+API.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+    
+    // If error is 401 and we haven't tried to refresh token yet
+    if (error.response.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      
+      try {
+        // Try to refresh the token
+        const refreshResponse = await axios.post(
+          `${API_URL || 'https://vanni-test-backend.vercel.app'}/auth/refresh-token`, 
+          {}, 
+          { withCredentials: true }
+        );
+        
+        if (refreshResponse.data && refreshResponse.data.token) {
+          // Store the new token
+          localStorage.setItem('accessToken', refreshResponse.data.token);
+          
+          // Update the original request with the new token
+          originalRequest.headers.Authorization = `Bearer ${refreshResponse.data.token}`;
+          return API(originalRequest);
+        }
+      } catch (refreshError) {
+        // If refresh fails, redirect to login
+        window.location.href = '/login';
+        return Promise.reject(refreshError);
+      }
+    }
+    
+    return Promise.reject(error);
+  }
+);
 
 export const AuthProvider = ({ children }) => {
   // Initialize user state without sessionStorage
@@ -181,20 +236,21 @@ export const AuthProvider = ({ children }) => {
     const authParam = params.get('auth');
     const userParam = params.get('user');
     const tokenParam = params.get('token');
-    const authSuccess = params.get('authSuccess');
     
-    if (authParam === 'google' && userParam && tokenParam && authSuccess) {
+    if (authParam === 'google' && userParam && tokenParam) {
       try {
         const userData = JSON.parse(decodeURIComponent(userParam));
         
-        // Store token in localStorage
+        // Store token in localStorage for API requests
         localStorage.setItem('accessToken', tokenParam);
         
         // Update state with user info
         setUser(userData);
         
-        // Clear URL params
+        // Clean up URL params
         window.history.replaceState({}, document.title, '/chat');
+        
+        console.log('Successfully processed Google auth callback');
       } catch (error) {
         console.error('Error processing auth callback:', error);
       }
