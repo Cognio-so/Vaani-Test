@@ -113,7 +113,6 @@ export const AuthProvider = ({ children }) => {
         const googleAuthInProgress = localStorage.getItem('googleAuthInProgress');
         
         if (googleAuth) {
-          ignoreRedirects = true;
           // Clear the Google auth in progress flag
           localStorage.removeItem('googleAuthInProgress');
           
@@ -127,14 +126,12 @@ export const AuthProvider = ({ children }) => {
           if (urlUser) {
             try {
               const userData = JSON.parse(decodeURIComponent(urlUser));
-              if (isMounted) {
-                setUser(userData);
-                setLoading(false);
-                
-                // Save token to localStorage if available
-                if (urlToken) {
-                  localStorage.setItem('access_token', urlToken);
-                }
+              setUser(userData);
+              setLoading(false);
+              
+              // Save token to localStorage if available
+              if (urlToken) {
+                localStorage.setItem('access_token', urlToken);
               }
               return; // Skip further verification
             } catch (e) {
@@ -146,38 +143,27 @@ export const AuthProvider = ({ children }) => {
         const error = urlParams.get('error');
         if (error === 'auth_failed') {
           console.error('Google authentication failed');
-          if (isMounted) setUser(null);
-          if (isMounted) setLoading(false);
-          navigate('/login');
+          setUser(null);
+          setLoading(false);
           return;
         }
 
-        const response = await fetchWithCredentials('/auth/check-auth');
-        const data = await response.json();
-        
-        if (isMounted) {
+        // Only perform token verification if no Google auth data
+        if (!googleAuth) {
+          const response = await fetchWithCredentials('/auth/check-auth');
+          const data = await response.json();
           setUser(data);
-          setLoading(false);
         }
         
-        // Only handle redirects if not ignoring them
-        if (!ignoreRedirects && !googleAuth) {
-          const intendedPath = localStorage.getItem('intendedPath');
-          if (intendedPath) {
-            localStorage.removeItem('intendedPath');
-            navigate(intendedPath);
-          }
-        }
+        setLoading(false);
       } catch (error) {
         console.error("Auth verification failed:", error);
-        if (isMounted) {
-          setUser(null);
-          setLoading(false);
-        }
+        setUser(null);
+        setLoading(false);
         
-        // Only redirect if not ignoring redirects and not on non-auth paths
+        // Only redirect if not on non-auth paths
         const nonAuthPaths = ['/login', '/signup', '/'];
-        if (!ignoreRedirects && !nonAuthPaths.includes(window.location.pathname)) {
+        if (!nonAuthPaths.includes(window.location.pathname)) {
           navigate('/login');
         }
       }
@@ -293,11 +279,9 @@ export const AuthProvider = ({ children }) => {
       // Set auth flow flag
       localStorage.setItem('googleAuthInProgress', 'true');
       
-      // Remove approval_prompt and just use prompt
-      const timestamp = new Date().getTime();
-      const googleAuthUrl = `${API_URL}/auth/google?` +
-        `t=${timestamp}&` +
-        `prompt=consent+select_account`;
+      // Add cache-busting timestamp parameter
+      const timestamp = Date.now();
+      const googleAuthUrl = `${API_URL}/auth/google?t=${timestamp}`;
       
       // Use window.location.href for consistent behavior
       window.location.href = googleAuthUrl;

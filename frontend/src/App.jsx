@@ -27,14 +27,15 @@ const ProtectedRoute = ({ children }) => {
       if (isGoogleAuth) {
         const userInfo = urlParams.get('user');
         const token = urlParams.get('token');
-        if (userInfo) {
+        if (userInfo && token) {
           try {
             const userData = JSON.parse(decodeURIComponent(userInfo));
-            // Store token in localStorage if available
-            if (token) {
-              localStorage.setItem('access_token', token);
-            }
+            // Store token in localStorage
+            localStorage.setItem('access_token', token);
             setHasUser(true);
+            
+            // Clear URL parameters to prevent refresh issues
+            window.history.replaceState({}, document.title, window.location.pathname);
           } catch (error) {
             console.error('Error parsing Google auth user data:', error);
           }

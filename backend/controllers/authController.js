@@ -246,13 +246,12 @@ const googleCallback = async (req, res, next) => {
         token: accessToken
       }));
       
-      // Redirect to login first with auth data
+      // IMPORTANT: Redirect directly to chat page instead of login page
       res.redirect(
-        `${process.env.FRONTEND_URL}/login?` +
+        `${process.env.FRONTEND_URL}/chat?` +
         `auth=google&` +
         `user=${userInfo}&` +
-        `token=${accessToken}&` +
-        `prompt=consent`
+        `token=${accessToken}`
       );
     } catch (error) {
       console.error('Google auth callback error:', error);
